@@ -103,9 +103,34 @@ class ShopResource extends Resource
                     
                 Forms\Components\Section::make('Social Media')
                     ->schema([
-                        Forms\Components\KeyValue::make('social_links')
-                            ->keyLabel('Platform')
-                            ->valueLabel('URL')
+                        Forms\Components\Repeater::make('social_links')
+                            ->schema([
+                                Forms\Components\Select::make('platform')
+                                    ->label('Platform')
+                                    ->options([
+                                        'facebook' => 'Facebook',
+                                        'instagram' => 'Instagram',
+                                        'twitter' => 'Twitter/X',
+                                        'linkedin' => 'LinkedIn',
+                                        'youtube' => 'YouTube',
+                                        'tiktok' => 'TikTok',
+                                        'pinterest' => 'Pinterest',
+                                        'snapchat' => 'Snapchat',
+                                        'whatsapp' => 'WhatsApp',
+                                        'telegram' => 'Telegram',
+                                        'website' => 'Website',
+                                    ])
+                                    ->required(),
+                                Forms\Components\TextInput::make('url')
+                                    ->label('URL')
+                                    ->url()
+                                    ->required()
+                                    ->maxLength(255),
+                            ])
+                            ->columns(2)
+                            ->itemLabel(fn (array $state): ?string => $state['platform'] ?? null)
+                            ->addActionLabel('Add Social Link')
+                            ->reorderableWithButtons()
                             ->columnSpanFull(),
                     ]),
                     
@@ -144,6 +169,19 @@ class ShopResource extends Resource
                 Tables\Columns\TextColumn::make('categories.name')
                     ->badge()
                     ->color('primary'),
+                Tables\Columns\TextColumn::make('social_links')
+                    ->label('Social Media')
+                    ->badge()
+                    ->formatStateUsing(function ($state) {
+                        if (!is_array($state)) return [];
+                        
+                        return collect($state)
+                            ->pluck('platform')
+                            ->map(fn ($platform) => ucfirst($platform))
+                            ->toArray();
+                    })
+                    ->colors(['success'])
+                    ->toggleable(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
                     ->sortable(),
