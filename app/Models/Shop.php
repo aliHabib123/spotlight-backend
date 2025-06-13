@@ -28,10 +28,47 @@ class Shop extends Model
     ];
     
     protected $casts = [
-        'social_links' => 'array',
+        'social_links' => 'json',
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
     ];
+    
+    /**
+     * Get the social links attribute.
+     *
+     * @param  mixed  $value
+     * @return array
+     */
+    public function getSocialLinksAttribute($value)
+    {
+        if (is_string($value) && !empty($value)) {
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+        
+        return is_array($value) ? $value : [];    
+    }
+    
+    /**
+     * Set the social links attribute.
+     *
+     * @param  mixed  $value
+     * @return void
+     */
+    public function setSocialLinksAttribute($value)
+    {
+        if (is_string($value) && !empty($value)) {
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $this->attributes['social_links'] = json_encode($decoded);
+                return;
+            }
+        }
+        
+        $this->attributes['social_links'] = is_array($value) ? json_encode($value) : json_encode([]);
+    }
     
     /**
      * Get the categories that this shop belongs to.

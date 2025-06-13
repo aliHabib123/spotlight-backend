@@ -169,18 +169,51 @@ class ShopResource extends Resource
                 Tables\Columns\TextColumn::make('categories.name')
                     ->badge()
                     ->color('primary'),
-                Tables\Columns\TextColumn::make('social_links')
+                // Custom HTML approach for social links with platform-specific colors
+                Tables\Columns\TextColumn::make('social_links_html')
                     ->label('Social Media')
-                    ->badge()
-                    ->formatStateUsing(function ($state) {
-                        if (!is_array($state)) return [];
+                    ->html()
+                    ->getStateUsing(function ($record) {
+                        $socialLinks = $record->social_links;
+                        $html = '';
                         
-                        return collect($state)
-                            ->pluck('platform')
-                            ->map(fn ($platform) => ucfirst($platform))
-                            ->toArray();
+                        // Define platform-specific colors with hex values
+                        $platformColors = [
+                            'facebook' => ['bg' => '#E7F0FF', 'text' => '#1877F2'], // Facebook blue
+                            'instagram' => ['bg' => '#FFEAF0', 'text' => '#E4405F'], // Instagram pink
+                            'twitter' => ['bg' => '#E6F7FF', 'text' => '#1DA1F2'], // Twitter blue
+                            'linkedin' => ['bg' => '#E7F0FF', 'text' => '#0A66C2'], // LinkedIn blue
+                            'youtube' => ['bg' => '#FFEBEE', 'text' => '#FF0000'], // YouTube red
+                            'tiktok' => ['bg' => '#F0F0F0', 'text' => '#000000'], // TikTok black
+                            'pinterest' => ['bg' => '#FFEBEE', 'text' => '#E60023'], // Pinterest red
+                            'snapchat' => ['bg' => '#FFFDE7', 'text' => '#FFFC00'], // Snapchat yellow
+                            'whatsapp' => ['bg' => '#E8F5E9', 'text' => '#25D366'], // WhatsApp green
+                            'telegram' => ['bg' => '#E3F2FD', 'text' => '#0088CC'], // Telegram blue
+                            'website' => ['bg' => '#F5F5F5', 'text' => '#666666'], // Website gray
+                            // Add more platforms as needed
+                        ];
+                        
+                        // Default color if platform not found
+                        $defaultColor = ['bg' => '#E8F5E9', 'text' => '#4CAF50'];
+                        
+                        // Handle different data formats
+                        if (is_array($socialLinks)) {
+                            foreach ($socialLinks as $link) {
+                                if (is_array($link) && isset($link['platform'])) {
+                                    $platform = strtolower($link['platform']);
+                                    $displayName = htmlspecialchars(ucfirst($platform));
+                                    $colors = $platformColors[$platform] ?? $defaultColor;
+                                    
+                                    // Generate HTML with platform-specific hex colors
+                                    $html .= "<span style='display:inline-flex;align-items:center;justify-content:center;min-height:1.5rem;padding:0.25rem 0.5rem;font-size:0.75rem;font-weight:500;line-height:1;border-radius:0.75rem;white-space:nowrap;color:{$colors['text']};background-color:{$colors['bg']};margin-right:0.25rem;margin-bottom:0.25rem;'>{$displayName}</span>";
+                                }
+                            }
+                        }
+                        
+                        return !empty($html) ? $html : '-';
                     })
-                    ->colors(['success'])
+                    ->searchable(false)
+                    ->sortable(false)
                     ->toggleable(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
