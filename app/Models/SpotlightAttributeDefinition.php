@@ -52,6 +52,14 @@ class SpotlightAttributeDefinition extends Model
     }
     
     /**
+     * Alias for categories() - needed for Filament's attach action
+     */
+    public function spotlightCategories(): BelongsToMany
+    {
+        return $this->categories();
+    }
+    
+    /**
      * Get all options for this attribute definition (for enum type).
      */
     public function options(): HasMany

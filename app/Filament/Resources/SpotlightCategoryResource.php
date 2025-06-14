@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SpotlightCategoryResource\Pages;
+use App\Filament\Resources\SpotlightCategoryResource\RelationManagers;
 use App\Models\SpotlightCategory;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -142,7 +143,7 @@ class SpotlightCategoryResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\AttributesRelationManager::class,
         ];
     }
 

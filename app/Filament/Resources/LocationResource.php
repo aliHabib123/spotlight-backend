@@ -121,14 +121,34 @@ class LocationResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TextFilter::make('city')
+                Tables\Filters\Filter::make('city')
                     ->label('City')
-                    ->attribute('city'),
+                    ->form([
+                        Forms\Components\TextInput::make('city')
+                            ->label('City')
+                            ->placeholder('Search by city'),
+                    ])
+                    ->query(function ($query, array $data) {
+                        return $query->when(
+                            $data['city'],
+                            fn ($query, $city) => $query->where('city', 'like', "%{$city}%")
+                        );
+                    }),
                     
-                Tables\Filters\TextFilter::make('country')
+                Tables\Filters\Filter::make('country')
                     ->label('Country')
-                    ->attribute('country')
-                    ->default('Lebanon'),
+                    ->form([
+                        Forms\Components\TextInput::make('country')
+                            ->label('Country')
+                            ->placeholder('Search by country')
+                            ->default('Lebanon'),
+                    ])
+                    ->query(function ($query, array $data) {
+                        return $query->when(
+                            $data['country'],
+                            fn ($query, $country) => $query->where('country', 'like', "%{$country}%")
+                        );
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
