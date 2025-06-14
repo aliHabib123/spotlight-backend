@@ -47,6 +47,48 @@ class RolesAndPermissionsSeeder extends Seeder
             'view finances',
             'process payments',
             'issue refunds',
+            
+            // Spotlight management
+            'view spotlights',
+            'create spotlights',
+            'edit spotlights',
+            'delete spotlights',
+            'publish spotlights',
+            'feature spotlights',
+            
+            // Category management
+            'view categories',
+            'create categories',
+            'edit categories',
+            'delete categories',
+            
+            // Tag management
+            'view tags',
+            'create tags',
+            'edit tags',
+            'delete tags',
+            
+            // Location management
+            'view locations',
+            'create locations',
+            'edit locations',
+            'delete locations',
+            
+            // Attribute management
+            'view attributes',
+            'create attributes',
+            'edit attributes',
+            'delete attributes',
+            
+            // Media management
+            'view media',
+            'upload media',
+            'edit media',
+            'delete media',
+            
+            // Feature flag management
+            'view feature-flags',
+            'edit feature-flags',
         ];
 
         foreach ($permissions as $permission) {
@@ -67,6 +109,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'view products', 'create products', 'edit products', 'delete products',
             'view orders', 'process orders', 'cancel orders',
             'view finances',
+            'view spotlights', 'create spotlights', 'edit spotlights', 'delete spotlights', 'publish spotlights', 'feature spotlights',
+            'view categories', 'create categories', 'edit categories', 'delete categories',
+            'view tags', 'create tags', 'edit tags', 'delete tags',
+            'view locations', 'create locations', 'edit locations', 'delete locations',
+            'view attributes', 'create attributes', 'edit attributes', 'delete attributes',
+            'view media', 'upload media', 'edit media', 'delete media',
+            'view feature-flags',
         ]);
 
         // Finance - gets financial permissions
@@ -77,6 +126,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'view products',
             'view orders',
             'view finances', 'process payments', 'issue refunds',
+            'view spotlights',
+            'view categories',
+            'view tags',
+            'view locations',
+            'view attributes',
+            'view media',
+            'view feature-flags',
         ]);
 
         // App User - basic permissions
@@ -84,6 +140,11 @@ class RolesAndPermissionsSeeder extends Seeder
         $appUserRole->givePermissionTo([
             'view shops',
             'view products',
+            'view spotlights',
+            'view categories',
+            'view tags',
+            'view locations',
+            'view media',
         ]);
 
         // Create Super Admin user
