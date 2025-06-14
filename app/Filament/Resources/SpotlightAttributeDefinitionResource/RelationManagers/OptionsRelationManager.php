@@ -15,7 +15,7 @@ class OptionsRelationManager extends RelationManager
     
     protected static ?string $title = 'Attribute Options';
 
-    public static function canViewForRecord(Model $ownerRecord): bool
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
         return $ownerRecord->type === 'enum';
     }
