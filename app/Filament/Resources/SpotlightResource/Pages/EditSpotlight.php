@@ -61,7 +61,12 @@ class EditSpotlight extends EditRecord
             $isRequired = $categoryAttribute->isRequired();
             
             // Get current value if it exists
-            $currentValue = $this->record->getAttributesByDefinition($definition->id)->first();
+            $attributesByDef = $this->record->getAttributesByDefinition();
+            $currentValue = isset($attributesByDef[$definition->id]) && !empty($attributesByDef[$definition->id]['values']) 
+                ? (is_object($attributesByDef[$definition->id]['values'][0]) 
+                    ? $attributesByDef[$definition->id]['values'][0] 
+                    : (object)['value' => $attributesByDef[$definition->id]['values'][0]]) 
+                : null;
             
             $field = null;
             
@@ -119,7 +124,21 @@ class EditSpotlight extends EditRecord
                         ->options($options)
                         ->multiple()
                         ->required($isRequired)
-                        ->default($this->record->getAttributesByDefinition($definition->id)->pluck('option_id')->toArray());
+                        ->default(function () use ($definition) {
+                            $attributesByDef = $this->record->getAttributesByDefinition();
+                            if (!isset($attributesByDef[$definition->id]) || empty($attributesByDef[$definition->id]['values'])) {
+                                return [];
+                            }
+                            
+                            // Extract option IDs from attribute values
+                            $optionIds = [];
+                            foreach ($attributesByDef[$definition->id]['values'] as $value) {
+                                if (is_object($value) && isset($value->id)) {
+                                    $optionIds[] = $value->id;
+                                }
+                            }
+                            return $optionIds;
+                        });
                     break;
                     
                 case 'date':
@@ -157,12 +176,26 @@ class EditSpotlight extends EditRecord
             return $field;
         })->filter()->toArray();
         
-        // Add fields to custom attributes tab
-        $form->getComponents()[0]->getChildComponents()[0]->getChildComponents()[5]->schema([
-            Forms\Components\Section::make('Category-specific Attributes')
-                ->schema($attributeFields)
-                ->columns(2),
-        ]);
+        // Find the Custom Attributes tab and add fields to it
+        $tabs = $form->getComponents()[0]->getChildComponents()[0]->getChildComponents();
+        
+        // Find the Custom Attributes tab by its label
+        $customAttributesTab = null;
+        foreach ($tabs as $tab) {
+            if ($tab instanceof Forms\Components\Tabs\Tab && $tab->getLabel() === 'Custom Attributes') {
+                $customAttributesTab = $tab;
+                break;
+            }
+        }
+        
+        // If we found the tab, add our fields to it
+        if ($customAttributesTab) {
+            $customAttributesTab->schema([
+                Forms\Components\Section::make('Category-specific Attributes')
+                    ->schema($attributeFields)
+                    ->columns(2),
+            ]);
+        }
     }
     
     protected function afterSave(): void
