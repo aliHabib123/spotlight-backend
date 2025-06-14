@@ -27,7 +27,7 @@ class AttributeValuesRelationManager extends RelationManager
                         // Show only attributes applicable to this spotlight's category
                         $categoryId = $this->ownerRecord->category_id;
                         $attributeDefinitions = SpotlightAttributeDefinition::whereHas('categories', function ($query) use ($categoryId) {
-                            $query->where('categories.id', $categoryId);
+                            $query->where('spotlight_categories.id', $categoryId);
                         })->get();
                         
                         return $attributeDefinitions->pluck('name', 'id')->toArray();
@@ -110,7 +110,7 @@ class AttributeValuesRelationManager extends RelationManager
                         // Show only attributes applicable to this spotlight's category
                         $categoryId = $this->ownerRecord->category_id;
                         $attributeDefinitions = SpotlightAttributeDefinition::whereHas('categories', function ($query) use ($categoryId) {
-                            $query->where('categories.id', $categoryId);
+                            $query->where('spotlight_categories.id', $categoryId);
                         })->get();
                         
                         return $attributeDefinitions->pluck('name', 'id')->toArray();

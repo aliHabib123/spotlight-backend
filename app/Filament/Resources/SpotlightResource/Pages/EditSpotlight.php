@@ -21,12 +21,13 @@ class EditSpotlight extends EditRecord
     {
         return [
             Actions\DeleteAction::make(),
-            Actions\Action::make('view')
-                ->label('View Spotlight')
-                ->url(fn ($record) => route('spotlights.show', $record->slug))
-                ->icon('heroicon-o-eye')
-                ->color('success')
-                ->visible(fn ($record) => $record->is_published),
+            // Comment out until frontend routes are implemented
+            // Actions\Action::make('view')
+            //     ->label('View Spotlight')
+            //     ->url(fn ($record) => route('spotlights.show', $record->slug))
+            //     ->icon('heroicon-o-eye')
+            //     ->color('success')
+            //     ->visible(fn ($record) => $record->is_published),
         ];
     }
     
