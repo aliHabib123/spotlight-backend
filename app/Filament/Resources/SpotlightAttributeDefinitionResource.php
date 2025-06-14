@@ -104,6 +104,9 @@ class SpotlightAttributeDefinitionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function ($query) {
+                return $query->withCount(['categories', 'options', 'values']);
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
@@ -139,13 +142,13 @@ class SpotlightAttributeDefinitionResource extends Resource
                     ->boolean(),
                     
                 Tables\Columns\TextColumn::make('categories_count')
-                    ->counts('categories')
-                    ->label('Categories'),
+                    ->label('Categories')
+                    ->formatStateUsing(fn ($state) => $state ?? 0),
                     
                 Tables\Columns\TextColumn::make('options_count')
-                    ->counts('options')
                     ->label('Options')
-                    ->visible(fn ($livewire) => $livewire->getTableRecords()->where('type', 'enum')->count() > 0),
+                    ->formatStateUsing(fn ($state) => $state ?? 0)
+                    ->visible(fn ($record) => $record?->type === 'enum'),
                     
                 Tables\Columns\TextColumn::make('display_order')
                     ->numeric()
@@ -212,6 +215,8 @@ class SpotlightAttributeDefinitionResource extends Resource
     
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::count();
+        return cache()->remember('spotlight_attribute_definitions_count', 300, function () {
+            return static::getModel()::count();
+        });
     }
 }
