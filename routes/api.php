@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\NewsController;
+use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\SpotlightController;
 use App\Http\Controllers\Api\SpotlightCategoryController;
 use App\Http\Controllers\Api\TagController;
@@ -38,6 +40,15 @@ Route::prefix('v1/auth')->group(function () {
 
 // Public API routes
 Route::prefix('v1')->group(function () {
+    // News Categories
+    Route::get('/news/categories', [NewsCategoryController::class, 'index']);
+    Route::get('/news/categories/{id}', [NewsCategoryController::class, 'show']);
+    
+    // News
+    Route::get('/news/latest', [NewsController::class, 'latest']);
+    Route::get('/news/featured', [NewsController::class, 'featured']);
+    Route::get('/news', [NewsController::class, 'index']);
+    Route::get('/news/{id}', [NewsController::class, 'show']);
     // Spotlight Categories
     Route::get('/categories', [SpotlightCategoryController::class, 'index']);
     Route::get('/categories/{category}', [SpotlightCategoryController::class, 'show']);
@@ -62,6 +73,19 @@ Route::prefix('v1')->group(function () {
     // Attribute Definitions - Read only for public
     Route::get('/attributes', [\App\Http\Controllers\Api\SpotlightAttributeDefinitionController::class, 'index']);
     Route::get('/attributes/{attribute}', [\App\Http\Controllers\Api\SpotlightAttributeDefinitionController::class, 'show']);
+});
+
+// Protected API routes
+Route::middleware(['auth:api'])->prefix('v1')->group(function () {
+    // News management
+    Route::post('/news', [NewsController::class, 'store']);
+    Route::put('/news/{id}', [NewsController::class, 'update']);
+    Route::delete('/news/{id}', [NewsController::class, 'destroy']);
+    
+    // News categories management
+    Route::post('/news/categories', [NewsCategoryController::class, 'store']);
+    Route::put('/news/categories/{id}', [NewsCategoryController::class, 'update']);
+    Route::delete('/news/categories/{id}', [NewsCategoryController::class, 'destroy']);
 });
 
 // Protected API routes

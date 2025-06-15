@@ -146,7 +146,7 @@ class AuthController extends Controller
      *
      * @return JsonResponse
      */
-    protected function respondWithToken(string $token, ?string $message = null, int $statusCode = 200): JsonResponse
+    protected function respondWithToken(string $token, string $message = '', int $statusCode = 200): JsonResponse
     {
         $user = auth('api')->user();
         
@@ -166,7 +166,7 @@ class AuthController extends Controller
             'permissions' => $permissions
         ];
         
-        if ($message !== null) {
+        if ($message !== '') {
             $response['message'] = $message;
         }
         

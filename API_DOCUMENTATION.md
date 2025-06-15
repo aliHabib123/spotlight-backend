@@ -614,6 +614,470 @@ The following endpoints require authentication and appropriate permissions:
 
 Many API responses are cached for improved performance. Cache invalidation happens automatically when related data is updated.
 
+## News API
+
+### News Categories
+
+#### List News Categories
+
+**Endpoint:** `GET /api/v1/news/categories`
+
+**Description:** Retrieves a list of all active news categories.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "Technology",
+      "slug": "technology",
+      "description": "Technology related news",
+      "is_active": true,
+      "created_at": "2025-06-15T10:00:00.000000Z",
+      "updated_at": "2025-06-15T10:00:00.000000Z",
+      "news_count": 15
+    },
+    {
+      "id": 2,
+      "name": "Business",
+      "slug": "business",
+      "description": "Business related news",
+      "is_active": true,
+      "created_at": "2025-06-15T10:05:00.000000Z",
+      "updated_at": "2025-06-15T10:05:00.000000Z",
+      "news_count": 8
+    }
+  ]
+}
+```
+
+#### Get News Category Details
+
+**Endpoint:** `GET /api/v1/news/categories/{id}`
+
+**Description:** Retrieves detailed information about a specific news category and its latest news articles. The `id` parameter can be either the numeric ID or the slug of the category.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "category": {
+      "id": 1,
+      "name": "Technology",
+      "slug": "technology",
+      "description": "Technology related news",
+      "is_active": true,
+      "created_at": "2025-06-15T10:00:00.000000Z",
+      "updated_at": "2025-06-15T10:00:00.000000Z",
+      "news_count": 15
+    },
+    "latest_news": [
+      {
+        "id": 1,
+        "title": "Latest Tech News",
+        "slug": "latest-tech-news",
+        "summary": "Brief summary of tech news",
+        "featured_image": "news/tech.jpg",
+        "published_at": "2025-06-15T18:00:00.000000Z",
+        "user_id": 1,
+        "author": {
+          "id": 1,
+          "name": "Author Name"
+        }
+      }
+    ]
+  }
+}
+```
+
+#### Create News Category (Protected)
+
+**Endpoint:** `POST /api/v1/news/categories`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must be authenticated
+
+**Request:**
+```json
+{
+  "name": "New Category",
+  "description": "Description of the new category"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Category created successfully",
+  "data": {
+    "id": 3,
+    "name": "New Category",
+    "slug": "new-category",
+    "description": "Description of the new category",
+    "is_active": true,
+    "created_at": "2025-06-15T13:00:00.000000Z",
+    "updated_at": "2025-06-15T13:00:00.000000Z"
+  }
+}
+```
+
+#### Update News Category (Protected)
+
+**Endpoint:** `PUT /api/v1/news/categories/{id}`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must be authenticated
+
+**Request:**
+```json
+{
+  "name": "Updated Category Name",
+  "description": "Updated category description",
+  "is_active": true
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Category updated successfully",
+  "data": {
+    "id": 1,
+    "name": "Updated Category Name",
+    "slug": "updated-category-name",
+    "description": "Updated category description",
+    "is_active": true,
+    "created_at": "2025-06-15T10:00:00.000000Z",
+    "updated_at": "2025-06-15T13:30:00.000000Z"
+  }
+}
+```
+
+#### Delete News Category (Protected)
+
+**Endpoint:** `DELETE /api/v1/news/categories/{id}`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must be authenticated
+
+**Note:** Categories with associated news articles cannot be deleted.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Category deleted successfully"
+}
+```
+
+### News Articles
+
+#### List News Articles
+
+**Endpoint:** `GET /api/v1/news`
+
+**Description:** Retrieves a paginated list of published news articles.
+
+**Parameters:**
+- `category_id` (optional): Filter news by category ID
+- `category_slug` (optional): Filter news by category slug
+- `search` (optional): Search term to filter news by title, content, or summary
+- `per_page` (optional): Number of items per page (default: 10)
+- `page` (optional): Page number for pagination
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "current_page": 1,
+    "data": [
+      {
+        "id": 1,
+        "title": "News Article Title",
+        "slug": "news-article-title",
+        "summary": "Brief summary of the news article",
+        "content": "Full content of the news article...",
+        "featured_image": "news/image.jpg",
+        "news_category_id": 1,
+        "user_id": 1,
+        "is_published": true,
+        "published_at": "2025-06-15T12:00:00.000000Z",
+        "created_at": "2025-06-15T10:30:00.000000Z",
+        "updated_at": "2025-06-15T10:30:00.000000Z",
+        "category": {
+          "id": 1,
+          "name": "Category Name",
+          "slug": "category-name"
+        },
+        "author": {
+          "id": 1,
+          "name": "Author Name"
+        }
+      }
+    ],
+    "first_page_url": "http://localhost/api/v1/news?page=1",
+    "from": 1,
+    "last_page": 5,
+    "last_page_url": "http://localhost/api/v1/news?page=5",
+    "next_page_url": "http://localhost/api/v1/news?page=2",
+    "path": "http://localhost/api/v1/news",
+    "per_page": 10,
+    "prev_page_url": null,
+    "to": 10,
+    "total": 50
+  }
+}
+```
+
+#### Get Latest News
+
+**Endpoint:** `GET /api/v1/news/latest`
+
+**Description:** Retrieves the most recent published news articles.
+
+**Parameters:**
+- `limit` (optional): Number of news articles to return (default: 5)
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "title": "Latest News Article",
+      "slug": "latest-news-article",
+      "summary": "Brief summary of the latest news",
+      "featured_image": "news/latest.jpg",
+      "published_at": "2025-06-15T18:00:00.000000Z",
+      "category": {
+        "id": 1,
+        "name": "Category Name",
+        "slug": "category-name"
+      },
+      "author": {
+        "id": 1,
+        "name": "Author Name"
+      }
+    }
+  ]
+}
+```
+
+#### Get Featured News
+
+**Endpoint:** `GET /api/v1/news/featured`
+
+**Description:** Retrieves featured news articles (those with featured images).
+
+**Parameters:**
+- `limit` (optional): Number of featured news articles to return (default: 3)
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "title": "Featured News Article",
+      "slug": "featured-news-article",
+      "summary": "Brief summary of the featured news",
+      "featured_image": "news/featured.jpg",
+      "published_at": "2025-06-15T15:00:00.000000Z",
+      "category": {
+        "id": 1,
+        "name": "Category Name",
+        "slug": "category-name"
+      },
+      "author": {
+        "id": 1,
+        "name": "Author Name"
+      }
+    }
+  ]
+}
+```
+
+#### Get News Article Details
+
+**Endpoint:** `GET /api/v1/news/{id}`
+
+**Description:** Retrieves detailed information about a specific news article. The `id` parameter can be either the numeric ID or the slug of the news article.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "news": {
+      "id": 1,
+      "title": "News Article Title",
+      "slug": "news-article-title",
+      "summary": "Brief summary of the news article",
+      "content": "Full content of the news article...",
+      "featured_image": "news/image.jpg",
+      "news_category_id": 1,
+      "user_id": 1,
+      "is_published": true,
+      "published_at": "2025-06-15T12:00:00.000000Z",
+      "created_at": "2025-06-15T10:30:00.000000Z",
+      "updated_at": "2025-06-15T10:30:00.000000Z",
+      "category": {
+        "id": 1,
+        "name": "Category Name",
+        "slug": "category-name"
+      },
+      "author": {
+        "id": 1,
+        "name": "Author Name"
+      }
+    },
+    "related_news": [
+      {
+        "id": 2,
+        "title": "Related News Article",
+        "slug": "related-news-article",
+        "summary": "Brief summary of related news",
+        "featured_image": "news/related.jpg",
+        "published_at": "2025-06-14T12:00:00.000000Z"
+      }
+    ]
+  }
+}
+```
+
+#### Create News Article (Protected)
+
+**Endpoint:** `POST /api/v1/news`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must be authenticated
+
+**Request:**
+```json
+{
+  "title": "New Article Title",
+  "summary": "Brief summary of the article",
+  "content": "Full content of the article...",
+  "news_category_id": 1,
+  "is_published": true,
+  "published_at": "2025-06-15T12:00:00.000000Z"
+}
+```
+
+**Note:** For `featured_image`, use multipart/form-data to upload the image file.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "News article created successfully",
+  "data": {
+    "id": 3,
+    "title": "New Article Title",
+    "slug": "new-article-title",
+    "summary": "Brief summary of the article",
+    "content": "Full content of the article...",
+    "featured_image": "news/uploaded-image.jpg",
+    "news_category_id": 1,
+    "user_id": 1,
+    "is_published": true,
+    "published_at": "2025-06-15T12:00:00.000000Z",
+    "created_at": "2025-06-15T11:30:00.000000Z",
+    "updated_at": "2025-06-15T11:30:00.000000Z",
+    "category": {
+      "id": 1,
+      "name": "Category Name",
+      "slug": "category-name"
+    },
+    "author": {
+      "id": 1,
+      "name": "Author Name"
+    }
+  }
+}
+```
+
+#### Update News Article (Protected)
+
+**Endpoint:** `PUT /api/v1/news/{id}`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must be authenticated and either be the author of the article or have admin role
+
+**Request:**
+```json
+{
+  "title": "Updated Article Title",
+  "summary": "Updated brief summary",
+  "content": "Updated full content...",
+  "news_category_id": 2,
+  "is_published": true,
+  "published_at": "2025-06-15T14:00:00.000000Z"
+}
+```
+
+**Note:** For `featured_image`, use multipart/form-data to upload a new image file.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "News article updated successfully",
+  "data": {
+    "id": 1,
+    "title": "Updated Article Title",
+    "slug": "updated-article-title",
+    "summary": "Updated brief summary",
+    "content": "Updated full content...",
+    "featured_image": "news/new-image.jpg",
+    "news_category_id": 2,
+    "user_id": 1,
+    "is_published": true,
+    "published_at": "2025-06-15T14:00:00.000000Z",
+    "created_at": "2025-06-15T10:30:00.000000Z",
+    "updated_at": "2025-06-15T12:45:00.000000Z",
+    "category": {
+      "id": 2,
+      "name": "New Category",
+      "slug": "new-category"
+    },
+    "author": {
+      "id": 1,
+      "name": "Author Name"
+    }
+  }
+}
+```
+
+#### Delete News Article (Protected)
+
+**Endpoint:** `DELETE /api/v1/news/{id}`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must be authenticated and either be the author of the article or have admin role
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "News article deleted successfully"
+}
+```
+
 ## Error Handling
 
 The API returns standard HTTP status codes:
