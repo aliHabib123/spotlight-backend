@@ -10,10 +10,144 @@ All API endpoints are prefixed with `/api/v1/`.
 
 ## Authentication
 
-Protected endpoints require authentication via Laravel Sanctum. Include your API token in the request header:
+### Web Authentication (Sanctum)
+
+Protected endpoints for web admin panel require authentication via Laravel Sanctum. Include your API token in the request header:
 
 ```
 Authorization: Bearer YOUR_API_TOKEN
+```
+
+### Mobile Authentication (JWT)
+
+Mobile applications should use JWT authentication. JWT provides a stateless, token-based authentication mechanism suitable for mobile clients.
+
+#### Obtaining a JWT Token
+
+**Endpoint:** `POST /api/v1/auth/login`
+
+**Request:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password"
+}
+```
+
+**Response:**
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "user": {...},
+  "roles": [...],
+  "permissions": [...]
+}
+```
+
+#### Using JWT Authentication
+
+Include the JWT token in the Authorization header for all protected requests:
+
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+## Mobile Authentication Endpoints
+
+### Register a New User
+
+**Endpoint:** `POST /api/v1/auth/register`
+
+**Request:**
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password",
+  "password_confirmation": "password"
+}
+```
+
+**Response:**
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "created_at": "2023-06-15T12:34:56.000000Z",
+    "updated_at": "2023-06-15T12:34:56.000000Z"
+  },
+  "roles": ["app user"],
+  "permissions": [],
+  "message": "User successfully registered"
+}
+```
+
+### Get User Profile
+
+**Endpoint:** `GET /api/v1/auth/me`
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Response:**
+```json
+{
+  "user": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "created_at": "2023-06-15T12:34:56.000000Z",
+    "updated_at": "2023-06-15T12:34:56.000000Z"
+  },
+  "roles": ["app user"],
+  "permissions": ["view spotlights", "create comments"]
+}
+```
+
+### Refresh Token
+
+**Endpoint:** `POST /api/v1/auth/refresh`
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Response:**
+```json
+{
+  "access_token": "NEW_JWT_TOKEN",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "user": {...},
+  "roles": [...],
+  "permissions": [...]
+}
+```
+
+### Logout
+
+**Endpoint:** `POST /api/v1/auth/logout`
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Response:**
+```json
+{
+  "message": "Successfully logged out"
+}
 ```
 
 ## Public Endpoints
