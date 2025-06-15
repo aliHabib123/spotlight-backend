@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Location;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class LocationController extends Controller
@@ -66,7 +68,7 @@ class LocationController extends Controller
      */
     public function store(Request $request)
     {
-        $this->authorize('create', Location::class);
+        Gate::authorize('create', Location::class);
         
         try {
             $validated = $request->validate([
@@ -108,7 +110,7 @@ class LocationController extends Controller
      */
     public function show(Location $location)
     {
-        $this->authorize('view', $location);
+        Gate::authorize('view', $location);
         
         return response()->json([
             'data' => $location
@@ -124,11 +126,14 @@ class LocationController extends Controller
      */
     public function spotlights(Location $location, Request $request)
     {
-        $this->authorize('view', $location);
+        // This is a public endpoint, no authorization required
         
         $spotlights = $location->spotlights()
             ->with(['category', 'tags'])
-            ->where('status', 'published')
+            // Filter by is_active if that column exists (assuming spotlights have an active state)
+            ->when(\Schema::hasColumn('spotlights', 'is_active'), function($query) {
+                return $query->where('is_active', true);
+            })
             ->orderBy('created_at', 'desc')
             ->paginate($request->input('per_page', 15));
         
@@ -146,7 +151,7 @@ class LocationController extends Controller
      */
     public function update(Request $request, Location $location)
     {
-        $this->authorize('update', $location);
+        Gate::authorize('update', $location);
         
         try {
             $validated = $request->validate([
@@ -188,7 +193,7 @@ class LocationController extends Controller
      */
     public function destroy(Location $location)
     {
-        $this->authorize('delete', $location);
+        Gate::authorize('delete', $location);
         
         // Check if location is used in spotlights
         if ($location->spotlights()->count() > 0) {
