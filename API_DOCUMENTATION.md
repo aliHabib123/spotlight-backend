@@ -1078,6 +1078,364 @@ Many API responses are cached for improved performance. Cache invalidation happe
 }
 ```
 
+## Banner Management
+
+These endpoints allow for management of banner advertisements throughout the application.
+
+### Banner Locations
+
+#### Get Banner Locations
+
+**Endpoint:** `GET /api/v1/banner-locations`
+
+**Description:** Retrieves a list of all banner locations with their associated banner counts.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "Homepage Hero",
+      "description": "Large banner at the top of the homepage",
+      "created_at": "2025-06-15T10:30:00.000000Z",
+      "updated_at": "2025-06-15T10:30:00.000000Z",
+      "banners_count": 3
+    },
+    {
+      "id": 2,
+      "name": "Sidebar",
+      "description": "Banner displayed in the sidebar",
+      "created_at": "2025-06-15T10:30:00.000000Z",
+      "updated_at": "2025-06-15T10:30:00.000000Z",
+      "banners_count": 1
+    }
+  ]
+}
+```
+
+#### Get Banner Location Details
+
+**Endpoint:** `GET /api/v1/banner-locations/{id}`
+
+**Description:** Retrieves detailed information about a specific banner location including its active banners.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 1,
+    "name": "Homepage Hero",
+    "description": "Large banner at the top of the homepage",
+    "created_at": "2025-06-15T10:30:00.000000Z",
+    "updated_at": "2025-06-15T10:30:00.000000Z",
+    "active_banners": [
+      {
+        "id": 1,
+        "title": "Summer Sale",
+        "image_url": "banners/summer-sale.jpg",
+        "link_url": "https://example.com/summer-sale",
+        "is_active": true,
+        "display_order": 1,
+        "start_date": "2025-06-01T00:00:00.000000Z",
+        "end_date": "2025-08-31T23:59:59.000000Z"
+      },
+      {
+        "id": 2,
+        "title": "New Collection",
+        "image_url": "banners/new-collection.jpg",
+        "link_url": "https://example.com/new-collection",
+        "is_active": true,
+        "display_order": 2,
+        "start_date": "2025-06-15T00:00:00.000000Z",
+        "end_date": "2025-07-15T23:59:59.000000Z"
+      }
+    ]
+  }
+}
+```
+
+#### Create Banner Location (Protected)
+
+**Endpoint:** `POST /api/v1/banner-locations`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must have admin role
+
+**Request:**
+```json
+{
+  "name": "Product Page Top",
+  "description": "Banner displayed at the top of product pages"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Banner location created successfully",
+  "data": {
+    "id": 3,
+    "name": "Product Page Top",
+    "description": "Banner displayed at the top of product pages",
+    "created_at": "2025-06-15T13:45:00.000000Z",
+    "updated_at": "2025-06-15T13:45:00.000000Z"
+  }
+}
+```
+
+#### Update Banner Location (Protected)
+
+**Endpoint:** `PUT /api/v1/banner-locations/{id}`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must have admin role
+
+**Request:**
+```json
+{
+  "name": "Updated Location Name",
+  "description": "Updated location description"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Banner location updated successfully",
+  "data": {
+    "id": 1,
+    "name": "Updated Location Name",
+    "description": "Updated location description",
+    "created_at": "2025-06-15T10:30:00.000000Z",
+    "updated_at": "2025-06-15T14:20:00.000000Z"
+  }
+}
+```
+
+#### Delete Banner Location (Protected)
+
+**Endpoint:** `DELETE /api/v1/banner-locations/{id}`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must have admin role
+
+**Note:** Banner locations with associated banners cannot be deleted.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Banner location deleted successfully"
+}
+```
+
+### Banners
+
+#### Get Active Banners for Location
+
+**Endpoint:** `GET /api/v1/banner-locations/{location_id}/banners`
+
+**Description:** Retrieves all active banners for a specific location, sorted by display order.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "title": "Summer Sale",
+      "image_url": "banners/summer-sale.jpg",
+      "link_url": "https://example.com/summer-sale",
+      "is_active": true,
+      "display_order": 1,
+      "start_date": "2025-06-01T00:00:00.000000Z",
+      "end_date": "2025-08-31T23:59:59.000000Z"
+    },
+    {
+      "id": 2,
+      "title": "New Collection",
+      "image_url": "banners/new-collection.jpg",
+      "link_url": "https://example.com/new-collection",
+      "is_active": true,
+      "display_order": 2,
+      "start_date": "2025-06-15T00:00:00.000000Z",
+      "end_date": "2025-07-15T23:59:59.000000Z"
+    }
+  ]
+}
+```
+
+#### Get Banner Details
+
+**Endpoint:** `GET /api/v1/banners/{id}`
+
+**Description:** Retrieves detailed information about a specific banner.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 1,
+    "title": "Summer Sale",
+    "description": "Promotion for summer products",
+    "image_url": "banners/summer-sale.jpg",
+    "link_url": "https://example.com/summer-sale",
+    "banner_location_id": 1,
+    "user_id": 1,
+    "is_active": true,
+    "display_order": 1,
+    "start_date": "2025-06-01T00:00:00.000000Z",
+    "end_date": "2025-08-31T23:59:59.000000Z",
+    "created_at": "2025-06-15T10:30:00.000000Z",
+    "updated_at": "2025-06-15T10:30:00.000000Z",
+    "location": {
+      "id": 1,
+      "name": "Homepage Hero"
+    },
+    "user": {
+      "id": 1,
+      "name": "Admin User"
+    }
+  }
+}
+```
+
+#### Create Banner (Protected)
+
+**Endpoint:** `POST /api/v1/banners`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must be authenticated
+
+**Request:**
+```json
+{
+  "title": "New Banner",
+  "description": "Description of the new banner",
+  "link_url": "https://example.com/promotion",
+  "banner_location_id": 1,
+  "is_active": true,
+  "display_order": 3,
+  "start_date": "2025-07-01T00:00:00.000000Z",
+  "end_date": "2025-07-31T23:59:59.000000Z"
+}
+```
+
+**Note:** For `image`, use multipart/form-data to upload the image file.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Banner created successfully",
+  "data": {
+    "id": 3,
+    "title": "New Banner",
+    "description": "Description of the new banner",
+    "image_url": "banners/new-banner.jpg",
+    "link_url": "https://example.com/promotion",
+    "banner_location_id": 1,
+    "user_id": 1,
+    "is_active": true,
+    "display_order": 3,
+    "start_date": "2025-07-01T00:00:00.000000Z",
+    "end_date": "2025-07-31T23:59:59.000000Z",
+    "created_at": "2025-06-15T15:30:00.000000Z",
+    "updated_at": "2025-06-15T15:30:00.000000Z",
+    "location": {
+      "id": 1,
+      "name": "Homepage Hero"
+    },
+    "user": {
+      "id": 1,
+      "name": "Admin User"
+    }
+  }
+}
+```
+
+#### Update Banner (Protected)
+
+**Endpoint:** `PUT /api/v1/banners/{id}`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must be authenticated and either be the creator of the banner or have admin role
+
+**Request:**
+```json
+{
+  "title": "Updated Banner",
+  "description": "Updated description",
+  "link_url": "https://example.com/updated-promotion",
+  "banner_location_id": 2,
+  "is_active": true,
+  "display_order": 1,
+  "start_date": "2025-07-15T00:00:00.000000Z",
+  "end_date": "2025-08-15T23:59:59.000000Z"
+}
+```
+
+**Note:** For `image`, use multipart/form-data to upload a new image file.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Banner updated successfully",
+  "data": {
+    "id": 1,
+    "title": "Updated Banner",
+    "description": "Updated description",
+    "image_url": "banners/updated-banner.jpg",
+    "link_url": "https://example.com/updated-promotion",
+    "banner_location_id": 2,
+    "user_id": 1,
+    "is_active": true,
+    "display_order": 1,
+    "start_date": "2025-07-15T00:00:00.000000Z",
+    "end_date": "2025-08-15T23:59:59.000000Z",
+    "created_at": "2025-06-15T10:30:00.000000Z",
+    "updated_at": "2025-06-15T16:15:00.000000Z",
+    "location": {
+      "id": 2,
+      "name": "Sidebar"
+    },
+    "user": {
+      "id": 1,
+      "name": "Admin User"
+    }
+  }
+}
+```
+
+#### Delete Banner (Protected)
+
+**Endpoint:** `DELETE /api/v1/banners/{id}`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must be authenticated and either be the creator of the banner or have admin role
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Banner deleted successfully"
+}
+```
+
 ## Error Handling
 
 The API returns standard HTTP status codes:
