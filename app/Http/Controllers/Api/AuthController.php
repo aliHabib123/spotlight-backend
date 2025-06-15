@@ -60,6 +60,8 @@ class AuthController extends Controller
             'name' => 'required|string|between:2,100',
             'email' => 'required|string|email|max:100|unique:users',
             'password' => 'required|string|confirmed|min:6',
+            'mobile' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -70,6 +72,8 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'mobile' => $request->mobile,
+            'address' => $request->address,
         ]);
         
         // Assign default role for mobile app users
@@ -142,7 +146,7 @@ class AuthController extends Controller
      *
      * @return JsonResponse
      */
-    protected function respondWithToken(string $token, string $message = null, int $statusCode = 200): JsonResponse
+    protected function respondWithToken(string $token, ?string $message = null, int $statusCode = 200): JsonResponse
     {
         $user = auth('api')->user();
         

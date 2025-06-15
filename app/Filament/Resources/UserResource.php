@@ -39,6 +39,12 @@ class UserResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true),
+                        Forms\Components\TextInput::make('mobile')
+                            ->tel()
+                            ->maxLength(20),
+                        Forms\Components\Textarea::make('address')
+                            ->maxLength(500)
+                            ->columnSpanFull(),
                         Forms\Components\DateTimePicker::make('email_verified_at'),
                         Forms\Components\TextInput::make('password')
                             ->password()
@@ -69,6 +75,13 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('mobile')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('address')
+                    ->searchable()
+                    ->limit(30)
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('roles.name')
                     ->badge()
                     ->color('primary')
