@@ -131,7 +131,7 @@ class LocationController extends Controller
         $spotlights = $location->spotlights()
             ->with(['category', 'tags'])
             // Filter by is_active if that column exists (assuming spotlights have an active state)
-            ->when(\Schema::hasColumn('spotlights', 'is_active'), function($query) {
+            ->when(Schema::hasColumn('spotlights', 'is_active'), function($query) {
                 return $query->where('is_active', true);
             })
             ->orderBy('created_at', 'desc')

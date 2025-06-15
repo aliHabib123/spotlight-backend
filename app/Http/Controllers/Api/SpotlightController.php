@@ -8,6 +8,7 @@ use App\Models\SpotlightCategory;
 use App\Models\SpotlightAttributeValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 
@@ -22,8 +23,12 @@ class SpotlightController extends Controller
     public function index(Request $request)
     {
         $query = Spotlight::query()
-            ->with(['category', 'tags', 'location'])
-            ->where('status', 'published');
+            ->with(['category', 'tags', 'location']);
+            
+        // Filter by is_active if that column exists
+        if (Schema::hasColumn('spotlights', 'is_active')) {
+            $query->where('is_active', true);
+        }
         
         // Apply filters
         if ($request->has('category_id')) {
@@ -86,8 +91,11 @@ class SpotlightController extends Controller
         
         return Cache::remember($cacheKey, 3600, function() use ($request) {
             return Spotlight::with(['category', 'tags', 'location'])
-                ->where('status', 'published')
                 ->where('is_featured', true)
+                // Filter by is_active if that column exists
+                ->when(Schema::hasColumn('spotlights', 'is_active'), function($query) {
+                    return $query->where('is_active', true);
+                })
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->input('per_page', 8));
         });
@@ -112,7 +120,10 @@ class SpotlightController extends Controller
         
         return Spotlight::with(['category', 'tags', 'location'])
             ->whereIn('category_id', $categoryIds)
-            ->where('status', 'published')
+            // Filter by is_active if that column exists (assuming spotlights have an active state)
+            ->when(Schema::hasColumn('spotlights', 'is_active'), function($query) {
+                return $query->where('is_active', true);
+            })
             ->orderBy('created_at', 'desc')
             ->paginate($request->input('per_page', 15));
     }
@@ -132,7 +143,7 @@ class SpotlightController extends Controller
             'description' => 'required|string',
             'category_id' => 'required|exists:spotlight_categories,id',
             'location_id' => 'nullable|exists:locations,id',
-            'status' => 'nullable|in:draft,pending,published,archived',
+            'is_active' => 'nullable|boolean',
             'rating' => 'nullable|numeric|min:0|max:5',
             'contact_email' => 'nullable|email',
             'contact_phone' => 'nullable|string|max:20',
@@ -150,7 +161,7 @@ class SpotlightController extends Controller
                     'description' => $validated['description'],
                     'category_id' => $validated['category_id'],
                     'location_id' => $validated['location_id'] ?? null,
-                    'status' => $validated['status'] ?? 'draft',
+                    'is_active' => $validated['is_active'] ?? false,
                     'rating' => $validated['rating'] ?? null,
                     'contact_email' => $validated['contact_email'] ?? null,
                     'contact_phone' => $validated['contact_phone'] ?? null,
@@ -209,9 +220,9 @@ class SpotlightController extends Controller
     {
         $this->authorize('view', $spotlight);
         
-        // For published spotlights, anyone can view
-        // For unpublished ones, check permission
-        if ($spotlight->status !== 'published') {
+        // For active spotlights, anyone can view
+        // For inactive ones, check permission
+        if (!$spotlight->is_active) {
             $this->authorize('manage', $spotlight);
         }
         
@@ -243,7 +254,7 @@ class SpotlightController extends Controller
             'description' => 'sometimes|string',
             'category_id' => 'sometimes|exists:spotlight_categories,id',
             'location_id' => 'nullable|exists:locations,id',
-            'status' => 'sometimes|in:draft,pending,published,archived',
+            'is_active' => 'sometimes|boolean',
             'rating' => 'nullable|numeric|min:0|max:5',
             'contact_email' => 'nullable|email',
             'contact_phone' => 'nullable|string|max:20',
@@ -327,7 +338,7 @@ class SpotlightController extends Controller
         $this->authorize('publish', $spotlight);
         
         $spotlight->update([
-            'status' => 'published',
+            'is_active' => true,
             'published_at' => now(),
         ]);
         
@@ -348,7 +359,7 @@ class SpotlightController extends Controller
         $this->authorize('publish', $spotlight);
         
         $spotlight->update([
-            'status' => 'draft',
+            'is_active' => false,
         ]);
         
         return response()->json([
