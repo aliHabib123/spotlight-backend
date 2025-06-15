@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SpotlightCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class SpotlightCategoryController extends Controller
@@ -13,6 +14,7 @@ class SpotlightCategoryController extends Controller
     /**
      * Display a listing of the categories.
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
@@ -54,7 +56,7 @@ class SpotlightCategoryController extends Controller
      */
     public function store(Request $request)
     {
-        $this->authorize('create', SpotlightCategory::class);
+        Gate::authorize('create', SpotlightCategory::class);
         
         try {
             $validated = $request->validate([
@@ -97,30 +99,9 @@ class SpotlightCategoryController extends Controller
      * @param  \App\Models\SpotlightCategory  $category
      * @return \Illuminate\Http\Response
      */
-    public function show(SpotlightCategory $category, Request $request)
+    public function show(SpotlightCategory $category)
     {
-        $this->authorize('view', $category);
-        
-        $data = $category->load('parent');
-        
-        // Include attribute definitions if requested
-        if ($request->input('with_attributes', false)) {
-            $data->load('attributeDefinitions');
-        }
-        
-        // Include children if requested
-        if ($request->input('with_children', false)) {
-            $data->load('children');
-        }
-        
-        // Include spotlight count if requested
-        if ($request->input('with_count', false)) {
-            $data->loadCount('spotlights');
-        }
-        
-        return response()->json([
-            'data' => $data
-        ]);
+        return response()->json($category->load('parent', 'attributeDefinitions'));
     }
     
     /**
@@ -132,11 +113,11 @@ class SpotlightCategoryController extends Controller
      */
     public function update(Request $request, SpotlightCategory $category)
     {
-        $this->authorize('update', $category);
+        Gate::authorize('update', $category);
         
         try {
             $validated = $request->validate([
-                'name' => 'sometimes|string|max:255',
+                'name' => 'sometimes|required|string|max:255',
                 'description' => 'nullable|string',
                 'parent_id' => 'nullable|exists:spotlight_categories,id',
                 'is_active' => 'boolean',
@@ -146,20 +127,11 @@ class SpotlightCategoryController extends Controller
                 'attribute_definitions.*' => 'exists:spotlight_attribute_definitions,id',
             ]);
             
-            // Check that parent isn't set to self or one of its descendants
-            if (isset($validated['parent_id']) && $validated['parent_id'] != null) {
-                if ($validated['parent_id'] == $category->id) {
-                    return response()->json([
-                        'message' => 'Category cannot be its own parent',
-                    ], 422);
-                }
-                
-                $descendants = $category->getAllChildren()->pluck('id')->toArray();
-                if (in_array($validated['parent_id'], $descendants)) {
-                    return response()->json([
-                        'message' => 'Category cannot have one of its descendants as its parent',
-                    ], 422);
-                }
+            // Prevent circular parent-child relationship
+            if (isset($validated['parent_id']) && $validated['parent_id'] == $category->id) {
+                return response()->json([
+                    'message' => 'A category cannot be its own parent',
+                ], 422);
             }
             
             $category->update($validated);
@@ -175,7 +147,7 @@ class SpotlightCategoryController extends Controller
             
             return response()->json([
                 'message' => 'Category updated successfully',
-                'data' => $category->fresh(['parent', 'attributeDefinitions'])
+                'data' => $category->load('parent', 'attributeDefinitions')
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -186,16 +158,16 @@ class SpotlightCategoryController extends Controller
     }
     
     /**
-     * Remove the specified category from storage.
+     * Remove the specified category.
      *
      * @param  \App\Models\SpotlightCategory  $category
      * @return \Illuminate\Http\Response
      */
     public function destroy(SpotlightCategory $category)
     {
-        $this->authorize('delete', $category);
+        Gate::authorize('delete', $category);
         
-        // Check if category has children or spotlights
+        // Check if category has children or linked spotlights
         if ($category->children()->count() > 0 || $category->spotlights()->count() > 0) {
             return response()->json([
                 'message' => 'Cannot delete category with children or spotlights',
@@ -218,24 +190,228 @@ class SpotlightCategoryController extends Controller
      *
      * @param  \Illuminate\Support\Collection  $categories
      * @param  int|null  $parentId
-     * @return \Illuminate\Support\Collection
+     * @return array
      */
-    protected function buildCategoryTree($categories, $parentId = null)
+    private function buildCategoryTree($categories, $parentId = null)
     {
-        $tree = collect();
+        $tree = [];
         
         foreach ($categories as $category) {
-            if ($category->parent_id === $parentId) {
+            if ($category->parent_id == $parentId) {
                 $children = $this->buildCategoryTree($categories, $category->id);
-                
-                if ($children->isNotEmpty()) {
+                if ($children) {
                     $category->children = $children;
                 }
-                
-                $tree->push($category);
+                $tree[] = $category;
             }
         }
         
         return $tree;
+    }
+    
+    /**
+     * Get all attributes associated with a category.
+     *
+     * @param  \App\Models\SpotlightCategory  $category
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function attributes(SpotlightCategory $category, Request $request)
+    {
+        $cacheKey = 'spotlight_category_attributes_' . $category->id;
+        
+        return Cache::remember($cacheKey, 3600, function() use ($category, $request) {
+            $query = $category->attributeDefinitions()
+                ->with('options')
+                ->orderBy('pivot_display_order', 'asc');
+            
+            // Filter by type if requested
+            if ($request->has('type')) {
+                $query->where('type', $request->type);
+            }
+            
+            // Include parent category attributes if requested
+            if ($request->input('include_parent', false) && $category->parent_id) {
+                $parentAttributes = $category->parent->attributeDefinitions()
+                    ->with('options')
+                    ->orderBy('pivot_display_order', 'asc');
+                
+                if ($request->has('type')) {
+                    $parentAttributes->where('type', $request->type);
+                }
+                
+                // Merge parent attributes with category attributes
+                return $query->get()->merge($parentAttributes->get());
+            }
+            
+            return $query->get();
+        });
+    }
+    
+    /**
+     * Get all filterable attributes for a category to be used as filters.
+     *
+     * @param  \App\Models\SpotlightCategory  $category
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function filters(SpotlightCategory $category, Request $request)
+    {
+        $cacheKey = 'spotlight_category_filters_' . $category->id;
+        
+        return Cache::remember($cacheKey, 3600, function() use ($category, $request) {
+            // Get category attributes that are filterable
+            $filterableAttributes = $category->attributeDefinitions()
+                ->with('options')
+                ->where('is_filterable', true)
+                ->orderBy('pivot_display_order', 'asc');
+            
+            // Include parent category filterable attributes if requested
+            if ($request->input('include_parent', false) && $category->parent_id) {
+                $parentFilters = $category->parent->attributeDefinitions()
+                    ->with('options')
+                    ->where('is_filterable', true)
+                    ->orderBy('pivot_display_order', 'asc');
+                
+                $combined = $filterableAttributes->get()->merge($parentFilters->get());
+                
+                // Format filter options
+                return $this->formatFilters($combined);
+            }
+            
+            // Format filter options
+            return $this->formatFilters($filterableAttributes->get());
+        });
+    }
+    
+    /**
+     * Format attributes as filters with their available options.
+     *
+     * @param  \Illuminate\Support\Collection  $attributes
+     * @return array
+     */
+    private function formatFilters($attributes)
+    {
+        $filters = [];
+        
+        foreach ($attributes as $attribute) {
+            $filter = [
+                'id' => $attribute->id,
+                'key' => $attribute->key,
+                'name' => $attribute->name,
+                'type' => $attribute->type,
+                'display_type' => $attribute->display_type ?? null,
+                'options' => []
+            ];
+            
+            // Include options for attributes that have them
+            // This covers select, multiselect, enum with options
+            if (in_array($attribute->type, ['select', 'multiselect', 'enum']) || 
+                (isset($attribute->display_type) && in_array($attribute->display_type, ['select', 'multiselect']))) {
+                $filter['options'] = $attribute->options->map(function($option) {
+                    return [
+                        'id' => $option->id,
+                        'value' => $option->value,
+                        'label' => $option->label ?: $option->value // Fall back to value if label is null
+                    ];
+                });
+            }
+            
+            $filters[] = $filter;
+        }
+        
+        return $filters;
+    }
+    
+    /**
+     * Attach attributes to a category.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\SpotlightCategory  $category
+     * @return \Illuminate\Http\Response
+     */
+    public function attachAttributes(Request $request, SpotlightCategory $category)
+    {
+        Gate::authorize('update', $category);
+        
+        $validated = $request->validate([
+            'attributes' => 'required|array',
+            'attributes.*' => 'exists:spotlight_attribute_definitions,id',
+            'display_orders' => 'array',
+            'display_orders.*' => 'integer|min:0',
+        ]);
+        
+        $syncData = [];
+        
+        foreach ($validated['attributes'] as $index => $attributeId) {
+            $syncData[$attributeId] = [
+                'display_order' => isset($validated['display_orders'][$index]) 
+                    ? $validated['display_orders'][$index] 
+                    : 0,
+            ];
+        }
+        
+        $category->attributeDefinitions()->syncWithoutDetaching($syncData);
+        
+        // Clear cache
+        Cache::forget('spotlight_category_attributes_' . $category->id);
+        Cache::forget('spotlight_category_filters_' . $category->id);
+        
+        return response()->json([
+            'message' => 'Attributes attached to category successfully',
+            'data' => $category->load('attributeDefinitions')
+        ]);
+    }
+    
+    /**
+     * Detach an attribute from a category.
+     *
+     * @param  \App\Models\SpotlightCategory  $category
+     * @param  int  $attribute
+     * @return \Illuminate\Http\Response
+     */
+    public function detachAttribute(SpotlightCategory $category, $attribute)
+    {
+        Gate::authorize('update', $category);
+        
+        $category->attributeDefinitions()->detach($attribute);
+        
+        // Clear cache
+        Cache::forget('spotlight_category_attributes_' . $category->id);
+        Cache::forget('spotlight_category_filters_' . $category->id);
+        
+        return response()->json([
+            'message' => 'Attribute detached from category successfully',
+        ]);
+    }
+    
+    /**
+     * Update the display order of an attribute in a category.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\SpotlightCategory  $category
+     * @param  int  $attribute
+     * @return \Illuminate\Http\Response
+     */
+    public function updateAttributeOrder(Request $request, SpotlightCategory $category, $attribute)
+    {
+        Gate::authorize('update', $category);
+        
+        $validated = $request->validate([
+            'display_order' => 'required|integer|min:0',
+        ]);
+        
+        $category->attributeDefinitions()->updateExistingPivot(
+            $attribute, 
+            ['display_order' => $validated['display_order']]
+        );
+        
+        // Clear cache
+        Cache::forget('spotlight_category_attributes_' . $category->id);
+        Cache::forget('spotlight_category_filters_' . $category->id);
+        
+        return response()->json([
+            'message' => 'Attribute order updated successfully',
+        ]);
     }
 }
