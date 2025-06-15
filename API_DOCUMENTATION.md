@@ -1082,6 +1082,364 @@ Many API responses are cached for improved performance. Cache invalidation happe
 
 These endpoints allow for management of banner advertisements throughout the application.
 
+## Ad Management
+
+These endpoints allow for management of targeted advertisements throughout the application.
+
+### Ad Locations
+
+#### Get Ad Locations
+
+**Endpoint:** `GET /api/v1/ad-locations`
+
+**Description:** Retrieves a list of all ad locations with their associated ad counts.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "Sidebar Top",
+      "description": "Ad placement at the top of the sidebar",
+      "created_at": "2025-06-15T10:30:00.000000Z",
+      "updated_at": "2025-06-15T10:30:00.000000Z",
+      "ads_count": 3
+    },
+    {
+      "id": 2,
+      "name": "Article Footer",
+      "description": "Ad displayed at the bottom of articles",
+      "created_at": "2025-06-15T10:30:00.000000Z",
+      "updated_at": "2025-06-15T10:30:00.000000Z",
+      "ads_count": 1
+    }
+  ]
+}
+```
+
+#### Get Ad Location Details
+
+**Endpoint:** `GET /api/v1/ad-locations/{id}`
+
+**Description:** Retrieves detailed information about a specific ad location including its active ads.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 1,
+    "name": "Sidebar Top",
+    "description": "Ad placement at the top of the sidebar",
+    "created_at": "2025-06-15T10:30:00.000000Z",
+    "updated_at": "2025-06-15T10:30:00.000000Z",
+    "active_ads": [
+      {
+        "id": 1,
+        "title": "Premium Membership",
+        "image": "ads/premium-membership.jpg",
+        "link_url": "https://example.com/premium",
+        "is_active": true,
+        "display_order": 1,
+        "start_date": "2025-06-01T00:00:00.000000Z",
+        "end_date": "2025-08-31T23:59:59.000000Z"
+      },
+      {
+        "id": 2,
+        "title": "Special Offer",
+        "image": "ads/special-offer.jpg",
+        "link_url": "https://example.com/offer",
+        "is_active": true,
+        "display_order": 2,
+        "start_date": "2025-06-15T00:00:00.000000Z",
+        "end_date": "2025-07-15T23:59:59.000000Z"
+      }
+    ]
+  }
+}
+```
+
+#### Create Ad Location (Protected)
+
+**Endpoint:** `POST /api/v1/ad-locations`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must have admin role
+
+**Request:**
+```json
+{
+  "name": "Mobile App Banner",
+  "description": "Ad displayed in the mobile application"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Ad location created successfully",
+  "data": {
+    "id": 3,
+    "name": "Mobile App Banner",
+    "description": "Ad displayed in the mobile application",
+    "created_at": "2025-06-15T13:45:00.000000Z",
+    "updated_at": "2025-06-15T13:45:00.000000Z"
+  }
+}
+```
+
+#### Update Ad Location (Protected)
+
+**Endpoint:** `PUT /api/v1/ad-locations/{id}`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must have admin role
+
+**Request:**
+```json
+{
+  "name": "Updated Location Name",
+  "description": "Updated location description"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Ad location updated successfully",
+  "data": {
+    "id": 1,
+    "name": "Updated Location Name",
+    "description": "Updated location description",
+    "created_at": "2025-06-15T10:30:00.000000Z",
+    "updated_at": "2025-06-15T14:20:00.000000Z"
+  }
+}
+```
+
+#### Delete Ad Location (Protected)
+
+**Endpoint:** `DELETE /api/v1/ad-locations/{id}`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must have admin role
+
+**Note:** Ad locations with associated ads cannot be deleted.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Ad location deleted successfully"
+}
+```
+
+### Ads
+
+#### Get Active Ads for Location
+
+**Endpoint:** `GET /api/v1/ad-locations/{location_id}/ads`
+
+**Description:** Retrieves all active ads for a specific location, sorted by display order.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "title": "Premium Membership",
+      "image": "ads/premium-membership.jpg",
+      "link_url": "https://example.com/premium",
+      "is_active": true,
+      "display_order": 1,
+      "start_date": "2025-06-01T00:00:00.000000Z",
+      "end_date": "2025-08-31T23:59:59.000000Z"
+    },
+    {
+      "id": 2,
+      "title": "Special Offer",
+      "image": "ads/special-offer.jpg",
+      "link_url": "https://example.com/offer",
+      "is_active": true,
+      "display_order": 2,
+      "start_date": "2025-06-15T00:00:00.000000Z",
+      "end_date": "2025-07-15T23:59:59.000000Z"
+    }
+  ]
+}
+```
+
+#### Get Ad Details
+
+**Endpoint:** `GET /api/v1/ads/{id}`
+
+**Description:** Retrieves detailed information about a specific ad.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 1,
+    "title": "Premium Membership",
+    "description": "Promotion for premium membership",
+    "image": "ads/premium-membership.jpg",
+    "link_url": "https://example.com/premium",
+    "ad_location_id": 1,
+    "user_id": 1,
+    "is_active": true,
+    "display_order": 1,
+    "start_date": "2025-06-01T00:00:00.000000Z",
+    "end_date": "2025-08-31T23:59:59.000000Z",
+    "created_at": "2025-06-15T10:30:00.000000Z",
+    "updated_at": "2025-06-15T10:30:00.000000Z",
+    "location": {
+      "id": 1,
+      "name": "Sidebar Top"
+    },
+    "user": {
+      "id": 1,
+      "name": "Admin User"
+    }
+  }
+}
+```
+
+#### Create Ad (Protected)
+
+**Endpoint:** `POST /api/v1/ads`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must be authenticated
+
+**Request:**
+```json
+{
+  "title": "New Ad",
+  "description": "Description of the new ad",
+  "link_url": "https://example.com/promotion",
+  "ad_location_id": 1,
+  "is_active": true,
+  "display_order": 3,
+  "start_date": "2025-07-01T00:00:00.000000Z",
+  "end_date": "2025-07-31T23:59:59.000000Z"
+}
+```
+
+**Note:** For `image`, use multipart/form-data to upload the image file.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Ad created successfully",
+  "data": {
+    "id": 3,
+    "title": "New Ad",
+    "description": "Description of the new ad",
+    "image": "ads/new-ad.jpg",
+    "link_url": "https://example.com/promotion",
+    "ad_location_id": 1,
+    "user_id": 1,
+    "is_active": true,
+    "display_order": 3,
+    "start_date": "2025-07-01T00:00:00.000000Z",
+    "end_date": "2025-07-31T23:59:59.000000Z",
+    "created_at": "2025-06-15T15:30:00.000000Z",
+    "updated_at": "2025-06-15T15:30:00.000000Z",
+    "location": {
+      "id": 1,
+      "name": "Sidebar Top"
+    },
+    "user": {
+      "id": 1,
+      "name": "Admin User"
+    }
+  }
+}
+```
+
+#### Update Ad (Protected)
+
+**Endpoint:** `PUT /api/v1/ads/{id}`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must be authenticated and either be the creator of the ad or have admin role
+
+**Request:**
+```json
+{
+  "title": "Updated Ad",
+  "description": "Updated description",
+  "link_url": "https://example.com/updated-promotion",
+  "ad_location_id": 2,
+  "is_active": true,
+  "display_order": 1,
+  "start_date": "2025-07-15T00:00:00.000000Z",
+  "end_date": "2025-08-15T23:59:59.000000Z"
+}
+```
+
+**Note:** For `image`, use multipart/form-data to upload a new image file.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Ad updated successfully",
+  "data": {
+    "id": 1,
+    "title": "Updated Ad",
+    "description": "Updated description",
+    "image": "ads/updated-ad.jpg",
+    "link_url": "https://example.com/updated-promotion",
+    "ad_location_id": 2,
+    "user_id": 1,
+    "is_active": true,
+    "display_order": 1,
+    "start_date": "2025-07-15T00:00:00.000000Z",
+    "end_date": "2025-08-15T23:59:59.000000Z",
+    "created_at": "2025-06-15T10:30:00.000000Z",
+    "updated_at": "2025-06-15T16:15:00.000000Z",
+    "location": {
+      "id": 2,
+      "name": "Article Footer"
+    },
+    "user": {
+      "id": 1,
+      "name": "Admin User"
+    }
+  }
+}
+```
+
+#### Delete Ad (Protected)
+
+**Endpoint:** `DELETE /api/v1/ads/{id}`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must be authenticated and either be the creator of the ad or have admin role
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Ad deleted successfully"
+}
+```
+
 ### Banner Locations
 
 #### Get Banner Locations

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\AdController;
+use App\Http\Controllers\Api\AdLocationController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\BannerLocationController;
@@ -84,6 +86,15 @@ Route::prefix('v1')->group(function () {
     Route::get('/banners', [BannerController::class, 'index']);
     Route::get('/banners/{id}', [BannerController::class, 'show']);
     Route::get('/banners/by-location/{slug}', [BannerController::class, 'byLocation']);
+    
+    // Ads - Public
+    Route::get('/ads', [AdController::class, 'index']);
+    Route::get('/ads/{id}', [AdController::class, 'show']);
+    Route::get('/ads/by-location/{locationId}', [AdController::class, 'getAdsByLocation']);
+    
+    // Ad Locations - Public
+    Route::get('/ads/locations', [AdLocationController::class, 'index']);
+    Route::get('/ads/locations/{id}', [AdLocationController::class, 'show']);
 });
 
 // Protected API routes
@@ -107,6 +118,16 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
     Route::post('/banners/locations', [BannerLocationController::class, 'store']);
     Route::put('/banners/locations/{id}', [BannerLocationController::class, 'update']);
     Route::delete('/banners/locations/{id}', [BannerLocationController::class, 'destroy']);
+    
+    // Ad management
+    Route::post('/ads', [AdController::class, 'store']);
+    Route::put('/ads/{id}', [AdController::class, 'update']);
+    Route::delete('/ads/{id}', [AdController::class, 'destroy']);
+    
+    // Ad locations management
+    Route::post('/ads/locations', [AdLocationController::class, 'store']);
+    Route::put('/ads/locations/{id}', [AdLocationController::class, 'update']);
+    Route::delete('/ads/locations/{id}', [AdLocationController::class, 'destroy']);
 });
 
 // Protected API routes
