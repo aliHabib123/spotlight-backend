@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Providers\FilamentBannerServiceProvider;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +12,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register the FilamentBannerServiceProvider
+        $this->app->register(FilamentBannerServiceProvider::class);
     }
 
     /**

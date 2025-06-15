@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BannerController;
+use App\Http\Controllers\Api\BannerLocationController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\SpotlightController;
@@ -73,6 +75,15 @@ Route::prefix('v1')->group(function () {
     // Attribute Definitions - Read only for public
     Route::get('/attributes', [\App\Http\Controllers\Api\SpotlightAttributeDefinitionController::class, 'index']);
     Route::get('/attributes/{attribute}', [\App\Http\Controllers\Api\SpotlightAttributeDefinitionController::class, 'show']);
+    
+    // Banner Locations - Public
+    Route::get('/banners/locations', [BannerLocationController::class, 'index']);
+    Route::get('/banners/locations/{id}', [BannerLocationController::class, 'show']);
+    
+    // Banners - Public
+    Route::get('/banners', [BannerController::class, 'index']);
+    Route::get('/banners/{id}', [BannerController::class, 'show']);
+    Route::get('/banners/by-location/{slug}', [BannerController::class, 'byLocation']);
 });
 
 // Protected API routes
@@ -86,6 +97,16 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
     Route::post('/news/categories', [NewsCategoryController::class, 'store']);
     Route::put('/news/categories/{id}', [NewsCategoryController::class, 'update']);
     Route::delete('/news/categories/{id}', [NewsCategoryController::class, 'destroy']);
+    
+    // Banner management
+    Route::post('/banners', [BannerController::class, 'store']);
+    Route::put('/banners/{id}', [BannerController::class, 'update']);
+    Route::delete('/banners/{id}', [BannerController::class, 'destroy']);
+    
+    // Banner locations management
+    Route::post('/banners/locations', [BannerLocationController::class, 'store']);
+    Route::put('/banners/locations/{id}', [BannerLocationController::class, 'update']);
+    Route::delete('/banners/locations/{id}', [BannerLocationController::class, 'destroy']);
 });
 
 // Protected API routes
