@@ -214,6 +214,18 @@ class SpotlightResource extends Resource
                             
                         Forms\Components\Tabs\Tab::make('Media & Video')
                             ->schema([
+                                Forms\Components\Section::make('Featured Image')
+                                    ->schema([
+                                        Forms\Components\FileUpload::make('featured_image')
+                                            ->label('Featured Image')
+                                            ->image()
+                                            ->imageEditor()
+                                            ->imageResizeMode('cover')
+                                            ->imageCropAspectRatio('16:9')
+                                            ->directory('spotlights')
+                                            ->columnSpanFull(),
+                                    ]),
+                                    
                                 Forms\Components\Section::make('Video Information')
                                     ->schema([
                                         Forms\Components\Toggle::make('has_video')
@@ -297,6 +309,12 @@ class SpotlightResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('featured_image')
+                    ->circular(false)
+                    ->square()
+                    ->defaultImageUrl(fn () => asset('images/placeholder.jpg'))
+                    ->label('Image'),
+                    
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),

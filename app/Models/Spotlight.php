@@ -32,6 +32,7 @@ class Spotlight extends Model
         'opening_hours',
         'video_url',
         'video_provider',
+        'featured_image',
         'is_featured',
         'is_published',
         'published_at',
