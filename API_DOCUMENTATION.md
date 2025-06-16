@@ -279,6 +279,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 - `category_id` (optional): Filter by category ID
 - `tag_id` (optional): Filter by tag ID
 - `location_id` (optional): Filter by location ID
+- `is_trending` (optional): Filter by trending status (true/false)
 - `search` (optional): Search term for name and description
 - `attributes[key]` (optional): Filter by attribute value (can include multiple attributes)
 - `sort_by` (optional): Field to sort by (default: created_at)
@@ -315,6 +316,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
       "rating": 4.5,
       "is_active": true,
       "is_featured": false,
+      "is_trending": false,
       "contact_email": "example@example.com",
       "contact_phone": "+1234567890",
       "website_url": "https://example.com"
@@ -360,6 +362,18 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Endpoint:** `GET /api/v1/spotlights/featured`
 
 **Description:** Retrieves a paginated list of featured spotlights.
+
+**Parameters:**
+- `per_page` (optional): Number of items per page (default: 8)
+- `page` (optional): Page number (default: 1)
+
+**Response:** Same format as List All Spotlights
+
+#### Get Trending Spotlights
+
+**Endpoint:** `GET /api/v1/spotlights/trending`
+
+**Description:** Retrieves a paginated list of trending spotlights.
 
 **Parameters:**
 - `per_page` (optional): Number of items per page (default: 8)

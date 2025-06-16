@@ -34,6 +34,7 @@ class Spotlight extends Model
         'video_provider',
         'featured_image',
         'is_featured',
+        'is_trending',
         'is_published',
         'published_at',
         'average_rating',

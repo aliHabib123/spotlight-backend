@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Spotlight;
 use App\Models\SpotlightCategory;
 use App\Models\SpotlightAttributeValue;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -14,6 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 class SpotlightController extends Controller
 {
+    use AuthorizesRequests;
     /**
      * Display a listing of the spotlights.
      *
@@ -43,6 +45,11 @@ class SpotlightController extends Controller
         
         if ($request->has('location_id')) {
             $query->where('location_id', $request->location_id);
+        }
+        
+        // Filter by is_trending
+        if ($request->has('is_trending')) {
+            $query->where('is_trending', filter_var($request->is_trending, FILTER_VALIDATE_BOOLEAN));
         }
         
         // Search
@@ -92,6 +99,28 @@ class SpotlightController extends Controller
         return Cache::remember($cacheKey, 3600, function() use ($request) {
             return Spotlight::with(['category', 'tags', 'location'])
                 ->where('is_featured', true)
+                // Filter by is_active if that column exists
+                ->when(Schema::hasColumn('spotlights', 'is_active'), function($query) {
+                    return $query->where('is_active', true);
+                })
+                ->orderBy('created_at', 'desc')
+                ->paginate($request->input('per_page', 8));
+        });
+    }
+    
+    /**
+     * Display trending spotlights.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function trending(Request $request)
+    {
+        $cacheKey = 'trending_spotlights_' . $request->input('per_page', 8);
+        
+        return Cache::remember($cacheKey, 3600, function() use ($request) {
+            return Spotlight::with(['category', 'tags', 'location'])
+                ->where('is_trending', true)
                 // Filter by is_active if that column exists
                 ->when(Schema::hasColumn('spotlights', 'is_active'), function($query) {
                     return $query->where('is_active', true);

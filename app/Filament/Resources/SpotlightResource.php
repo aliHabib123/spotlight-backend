@@ -120,6 +120,11 @@ class SpotlightResource extends Resource
                                             ->helperText('Featured spotlights appear in featured sections')
                                             ->default(false),
                                             
+                                        Forms\Components\Toggle::make('is_trending')
+                                            ->label('Trending')
+                                            ->helperText('Trending spotlights appear in trending sections')
+                                            ->default(false),
+                                            
                                         Forms\Components\Toggle::make('is_verified')
                                             ->label('Verified')
                                             ->helperText('Verified spotlights have been confirmed by admins')
@@ -341,6 +346,11 @@ class SpotlightResource extends Resource
                     ->boolean()
                     ->sortable(),
                     
+                Tables\Columns\IconColumn::make('is_trending')
+                    ->label('Trending')
+                    ->boolean()
+                    ->sortable(),
+                    
                 Tables\Columns\TextColumn::make('rating')
                     ->sortable()
                     ->numeric(2),
@@ -383,6 +393,13 @@ class SpotlightResource extends Resource
                     ->placeholder('All Spotlights')
                     ->trueLabel('Featured Only')
                     ->falseLabel('Non-Featured Only')
+                    ->native(false),
+                    
+                Tables\Filters\TernaryFilter::make('is_trending')
+                    ->label('Trending')
+                    ->placeholder('All Spotlights')
+                    ->trueLabel('Trending Only')
+                    ->falseLabel('Non-Trending Only')
                     ->native(false),
                     
                 Tables\Filters\TernaryFilter::make('is_verified')
