@@ -224,9 +224,9 @@ class SpotlightResource extends Resource
                                         Forms\Components\FileUpload::make('featured_image')
                                             ->label('Featured Image')
                                             ->image()
-                                            ->imageEditor()
-                                            ->imageResizeMode('cover')
-                                            ->imageCropAspectRatio('16:9')
+                                            // ->imageEditor()
+                                            // ->imageResizeMode('cover')
+                                            // ->imageCropAspectRatio('16:9')
                                             ->directory('spotlights')
                                             ->columnSpanFull(),
                                     ]),
