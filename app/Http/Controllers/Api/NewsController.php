@@ -307,4 +307,49 @@ class NewsController extends Controller
             'message' => 'News article deleted successfully'
         ]);
     }
+
+    /**
+     * Display the latest news articles.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function latest(Request $request): JsonResponse
+    {
+        $limit = $request->input('limit', 5);
+        
+        $latestNews = News::with(['category', 'author'])
+            ->published()
+            ->orderBy('published_at', 'desc')
+            ->limit($limit)
+            ->get();
+            
+        return response()->json([
+            'status' => 'success',
+            'data' => $latestNews
+        ]);
+    }
+
+    /**
+     * Display featured news articles.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function featured(Request $request): JsonResponse
+    {
+        $limit = $request->input('limit', 5);
+        
+        $featuredNews = News::with(['category', 'author'])
+            ->published()
+            ->where('is_featured', true)
+            ->orderBy('published_at', 'desc')
+            ->limit($limit)
+            ->get();
+            
+        return response()->json([
+            'status' => 'success',
+            'data' => $featuredNews
+        ]);
+    }
 }

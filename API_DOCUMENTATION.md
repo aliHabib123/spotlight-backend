@@ -899,7 +899,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
 
 **Endpoint:** `GET /api/v1/news/latest`
 
-**Description:** Retrieves the most recent published news articles.
+**Description:** Retrieves the most recent published news articles, sorted by published date in descending order.
 
 **Parameters:**
 - `limit` (optional): Number of news articles to return (default: 5)
@@ -914,8 +914,15 @@ Many API responses are cached for improved performance. Cache invalidation happe
       "title": "Latest News Article",
       "slug": "latest-news-article",
       "summary": "Brief summary of the latest news",
+      "content": "Full content of the news article...",
       "featured_image": "news/latest.jpg",
-      "published_at": "2025-06-15T18:00:00.000000Z",
+      "news_category_id": 1,
+      "user_id": 1,
+      "is_published": true,
+      "is_featured": false,
+      "published_at": "2025-06-19T18:00:00.000000Z",
+      "created_at": "2025-06-19T15:30:45.000000Z",
+      "updated_at": "2025-06-19T15:30:45.000000Z",
       "category": {
         "id": 1,
         "name": "Category Name",
@@ -934,10 +941,10 @@ Many API responses are cached for improved performance. Cache invalidation happe
 
 **Endpoint:** `GET /api/v1/news/featured`
 
-**Description:** Retrieves featured news articles (those with featured images).
+**Description:** Retrieves featured news articles (those with the `is_featured` flag set to true).
 
 **Parameters:**
-- `limit` (optional): Number of featured news articles to return (default: 3)
+- `limit` (optional): Number of featured news articles to return (default: 5)
 
 **Response:**
 ```json
@@ -949,8 +956,15 @@ Many API responses are cached for improved performance. Cache invalidation happe
       "title": "Featured News Article",
       "slug": "featured-news-article",
       "summary": "Brief summary of the featured news",
+      "content": "Full content of the featured news article...",
       "featured_image": "news/featured.jpg",
-      "published_at": "2025-06-15T15:00:00.000000Z",
+      "news_category_id": 1,
+      "user_id": 1,
+      "is_published": true,
+      "is_featured": true,
+      "published_at": "2025-06-19T12:00:00.000000Z",
+      "created_at": "2025-06-19T10:30:45.000000Z",
+      "updated_at": "2025-06-19T10:30:45.000000Z",
       "category": {
         "id": 1,
         "name": "Category Name",

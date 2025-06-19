@@ -32,6 +32,7 @@ class News extends Model
         'news_category_id',
         'user_id',
         'is_published',
+        'is_featured',
         'published_at',
     ];
 
@@ -42,6 +43,7 @@ class News extends Model
      */
     protected $casts = [
         'is_published' => 'boolean',
+        'is_featured' => 'boolean',
         'published_at' => 'datetime',
     ];
 
