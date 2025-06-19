@@ -15,10 +15,15 @@ class SpotlightCategoryController extends Controller
      * Display a listing of the categories.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
+        // If location slug is provided, use the byLocation method instead
+        if ($request->has('location')) {
+            return $this->byLocation($request, $request->input('location'));
+        }
+        
         $cacheKey = 'spotlight_categories_' . $request->input('include_inactive', false);
         
         return Cache::remember($cacheKey, 3600, function() use ($request) {
@@ -413,5 +418,51 @@ class SpotlightCategoryController extends Controller
         return response()->json([
             'message' => 'Attribute order updated successfully',
         ]);
+    }
+    
+    /**
+     * Get categories by home screen location slug.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $locationSlug
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function byLocation(Request $request, string $locationSlug)
+    {
+        $cacheKey = 'spotlight_categories_location_' . $locationSlug . '_' . $request->input('include_inactive', false);
+        
+        return Cache::remember($cacheKey, 3600, function() use ($request, $locationSlug) {
+            $query = SpotlightCategory::query()
+                ->whereHas('homeScreenLocation', function($query) use ($locationSlug) {
+                    $query->where('slug', $locationSlug);
+                })
+                ->with('homeScreenLocation');
+            
+            // Only include active categories for public view
+            if (!$request->input('include_inactive', false)) {
+                $query->where('is_active', true);
+            }
+            
+            // Include parent relationship for hierarchical structure
+            $query->with('parent');
+            
+            // Include attribute definitions if requested
+            if ($request->input('with_attributes', false)) {
+                $query->with('attributeDefinitions');
+            }
+            
+            $categories = $query->orderBy('display_order')->get();
+            
+            // Transform to hierarchical structure if requested
+            if ($request->input('hierarchical', false)) {
+                return $this->buildCategoryTree($categories);
+            }
+            
+            return response()->json([
+                'status' => 'success',
+                'location' => $locationSlug,
+                'categories' => $categories
+            ]);
+        });
     }
 }

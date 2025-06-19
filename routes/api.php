@@ -55,6 +55,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/news/{id}', [NewsController::class, 'show']);
     // Spotlight Categories
     Route::get('/categories', [SpotlightCategoryController::class, 'index']);
+    Route::get('/categories/location/{locationSlug}', [SpotlightCategoryController::class, 'byLocation']);
     Route::get('/categories/{category}', [SpotlightCategoryController::class, 'show']);
     Route::get('/categories/{category}/attributes', [SpotlightCategoryController::class, 'attributes']);
     Route::get('/categories/{category}/filters', [SpotlightCategoryController::class, 'filters']);

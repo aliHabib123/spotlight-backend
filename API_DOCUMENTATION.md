@@ -163,6 +163,10 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Parameters:**
 - `per_page` (optional): Number of items per page (default: 15)
 - `page` (optional): Page number (default: 1)
+- `location` (optional): Filter categories by home screen location slug (e.g., 'top', 'middle', 'bottom')
+- `include_inactive` (optional): Include inactive categories (default: false)
+- `with_attributes` (optional): Include attribute definitions for each category (default: false)
+- `hierarchical` (optional): Return categories in a hierarchical tree structure (default: false)
 
 **Response:**
 ```json
@@ -181,6 +185,45 @@ Authorization: Bearer YOUR_JWT_TOKEN
   ],
   "links": {...},
   "meta": {...}
+}
+```
+
+#### Get Categories by Home Screen Location
+
+**Endpoint:** `GET /api/v1/categories/location/{locationSlug}`
+
+**Description:** Retrieves spotlight categories assigned to a specific home screen location (top, middle, bottom, etc.).
+
+**Parameters:**
+- `locationSlug`: The slug of the home screen location (e.g., 'top', 'middle', 'bottom')
+- `include_inactive` (optional): Include inactive categories (default: false)
+- `with_attributes` (optional): Include attribute definitions for each category (default: false)
+- `hierarchical` (optional): Return categories in a hierarchical tree structure (default: false)
+
+**Response:**
+```json
+{
+  "status": "success",
+  "location": "top",
+  "categories": [
+    {
+      "id": 1,
+      "name": "Restaurants",
+      "slug": "restaurants",
+      "icon": null,
+      "description": "Restaurants in the area",
+      "is_active": true,
+      "parent_id": null,
+      "home_screen_location_id": 1,
+      "home_screen_location": {
+        "id": 1,
+        "name": "Top",
+        "slug": "top",
+        "display_order": 1
+      }
+    },
+    ...
+  ]
 }
 ```
 
