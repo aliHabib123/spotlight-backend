@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\SavedSpotlightController;
 use App\Http\Controllers\Api\ShippingAddressController;
 use App\Http\Controllers\Api\SpotlightController;
 use App\Http\Controllers\Api\SpotlightCategoryController;
@@ -166,6 +167,14 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
         Route::get('/', [OrderController::class, 'index']); // List user's orders
         Route::get('/{id}', [OrderController::class, 'show']); // View specific order
         Route::patch('/{id}/cancel', [OrderController::class, 'cancel']); // Cancel an order
+    });
+    
+    // Saved Spotlights (authenticated users only)
+    Route::prefix('saved-spotlights')->group(function () {
+        Route::get('/', [SavedSpotlightController::class, 'index']); // List user's saved spotlights
+        Route::post('/{id}', [SavedSpotlightController::class, 'save']); // Save a spotlight
+        Route::delete('/{id}', [SavedSpotlightController::class, 'unsave']); // Unsave a spotlight
+        Route::get('/{id}/check', [SavedSpotlightController::class, 'check']); // Check if a spotlight is saved
     });
 });
 

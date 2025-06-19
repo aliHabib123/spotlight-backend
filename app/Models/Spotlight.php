@@ -182,4 +182,21 @@ class Spotlight extends Model
               });
         });
     }
+    
+    /**
+     * Get the users who have saved this spotlight.
+     */
+    public function savedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'saved_spotlights', 'spotlight_id', 'user_id')
+                    ->withTimestamps();
+    }
+    
+    /**
+     * Get the saved spotlight records.
+     */
+    public function savedRecords(): HasMany
+    {
+        return $this->hasMany(SavedSpotlight::class);
+    }
 }

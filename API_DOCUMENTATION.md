@@ -498,7 +498,148 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Parameters:**
 - `tag`: Tag ID
 - `per_page` (optional): Number of items per page (default: 15)
+
+### Saved Spotlights
+
+#### List Saved Spotlights
+
+**Endpoint:** `GET /api/v1/saved-spotlights`
+
+**Authentication:** Required (JWT)
+
+**Description:** Retrieves a paginated list of spotlights saved by the authenticated user.
+
+**Parameters:**
+- `per_page` (optional): Number of items per page (default: 10)
 - `page` (optional): Page number (default: 1)
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "current_page": 1,
+    "data": [
+      {
+        "id": 1,
+        "name": "Restaurant Name",
+        "slug": "restaurant-name",
+        "description": "Description of the spotlight",
+        "short_description": "Short description",
+        "category_id": 1,
+        "location_id": 2,
+        "user_id": 1,
+        "contact_info": {
+          "phone": "+1234567890",
+          "email": "contact@example.com"
+        },
+        "social_links": {
+          "facebook": "https://facebook.com/example",
+          "instagram": "https://instagram.com/example"
+        },
+        "opening_hours": {
+          "monday": "9:00 AM - 5:00 PM",
+          "tuesday": "9:00 AM - 5:00 PM"
+        },
+        "featured_image": "spotlights/featured-image.jpg",
+        "is_featured": true,
+        "is_trending": false,
+        "is_published": true,
+        "published_at": "2025-06-01T10:00:00.000000Z",
+        "created_at": "2025-06-01T09:00:00.000000Z",
+        "updated_at": "2025-06-01T09:00:00.000000Z",
+        "category": {
+          "id": 1,
+          "name": "Restaurants",
+          "slug": "restaurants"
+        },
+        "location": {
+          "id": 2,
+          "name": "Downtown",
+          "slug": "downtown"
+        }
+      }
+    ],
+    "first_page_url": "http://localhost/api/v1/saved-spotlights?page=1",
+    "from": 1,
+    "last_page": 1,
+    "last_page_url": "http://localhost/api/v1/saved-spotlights?page=1",
+    "links": [...],
+    "next_page_url": null,
+    "path": "http://localhost/api/v1/saved-spotlights",
+    "per_page": 10,
+    "prev_page_url": null,
+    "to": 1,
+    "total": 1
+  }
+}
+```
+
+#### Save a Spotlight
+
+**Endpoint:** `POST /api/v1/saved-spotlights/{id}`
+
+**Authentication:** Required (JWT)
+
+**Description:** Saves a spotlight for the authenticated user.
+
+**Parameters:**
+- `id`: Spotlight ID to save
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Spotlight saved successfully",
+  "data": {
+    "user_id": 1,
+    "spotlight_id": 5,
+    "updated_at": "2025-06-20T02:25:00.000000Z",
+    "created_at": "2025-06-20T02:25:00.000000Z",
+    "id": 1
+  }
+}
+```
+
+#### Unsave a Spotlight
+
+**Endpoint:** `DELETE /api/v1/saved-spotlights/{id}`
+
+**Authentication:** Required (JWT)
+
+**Description:** Removes a spotlight from the authenticated user's saved spotlights.
+
+**Parameters:**
+- `id`: Spotlight ID to unsave
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Spotlight unsaved successfully"
+}
+```
+
+#### Check if Spotlight is Saved
+
+**Endpoint:** `GET /api/v1/saved-spotlights/{id}/check`
+
+**Authentication:** Required (JWT)
+
+**Description:** Checks if a spotlight is saved by the authenticated user.
+
+**Parameters:**
+- `id`: Spotlight ID to check
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "is_saved": true
+  }
+}
+```
 
 **Response:** Same format as List All Spotlights
 
