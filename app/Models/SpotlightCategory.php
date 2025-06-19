@@ -25,6 +25,7 @@ class SpotlightCategory extends Model
         'parent_id',
         'is_active',
         'display_order',
+        'home_screen_location_id',
     ];
     
     /**
@@ -90,5 +91,13 @@ class SpotlightCategory extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('display_order');
+    }
+    
+    /**
+     * Get the home screen location for this category.
+     */
+    public function homeScreenLocation(): BelongsTo
+    {
+        return $this->belongsTo(HomeScreenLocation::class);
     }
 }

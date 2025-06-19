@@ -66,6 +66,12 @@ class SpotlightCategoryResource extends Resource
                         Forms\Components\TextInput::make('display_order')
                             ->numeric()
                             ->default(0),
+                            
+                        Forms\Components\Select::make('home_screen_location_id')
+                            ->label('Home Screen Location')
+                            ->relationship('homeScreenLocation', 'name')
+                            ->searchable()
+                            ->preload(),
                     ]),
             ]);
     }
@@ -92,6 +98,10 @@ class SpotlightCategoryResource extends Resource
                     
                 Tables\Columns\TextColumn::make('display_order')
                     ->numeric()
+                    ->sortable(),
+                    
+                Tables\Columns\TextColumn::make('homeScreenLocation.name')
+                    ->label('Home Screen Location')
                     ->sortable(),
                     
                 Tables\Columns\TextColumn::make('spotlights_count')
