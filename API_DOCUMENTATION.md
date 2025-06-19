@@ -323,6 +323,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 - `tag_id` (optional): Filter by tag ID
 - `location_id` (optional): Filter by location ID
 - `is_trending` (optional): Filter by trending status (true/false)
+- `is_featured` (optional): Filter by featured status (true/false)
 - `search` (optional): Search term for name and description
 - `attributes[key]` (optional): Filter by attribute value (can include multiple attributes)
 - `sort_by` (optional): Field to sort by (default: created_at)
@@ -335,6 +336,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 /api/v1/spotlights?category_id=1&location_id=2
 /api/v1/spotlights?attributes[cuisine]=lebanese&tag_id=5
 /api/v1/spotlights?search=cafe&sort_by=rating&sort_dir=desc
+/api/v1/spotlights?category_id=3&is_featured=false
 ```
 
 **Response:**

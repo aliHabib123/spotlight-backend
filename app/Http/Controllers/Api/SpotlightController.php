@@ -52,6 +52,11 @@ class SpotlightController extends Controller
             $query->where('is_trending', filter_var($request->is_trending, FILTER_VALIDATE_BOOLEAN));
         }
         
+        // Filter by is_featured
+        if ($request->has('is_featured')) {
+            $query->where('is_featured', filter_var($request->is_featured, FILTER_VALIDATE_BOOLEAN));
+        }
+        
         // Search
         if ($request->has('search')) {
             $search = $request->search;
