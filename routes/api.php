@@ -5,8 +5,11 @@ use App\Http\Controllers\Api\AdLocationController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\BannerLocationController;
+use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NewsCategoryController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\ShippingAddressController;
 use App\Http\Controllers\Api\SpotlightController;
 use App\Http\Controllers\Api\SpotlightCategoryController;
 use App\Http\Controllers\Api\TagController;
@@ -99,6 +102,21 @@ Route::prefix('v1')->group(function () {
     Route::get('/ads/locations', [AdLocationController::class, 'index']);
     Route::get('/ads/locations/{id}', [AdLocationController::class, 'show']);
     Route::get('/ads/locations/slug/{slug}', [AdLocationController::class, 'showBySlug']);
+    
+    // E-commerce - Cart (accessible by both guests and authenticated users)
+    Route::prefix('cart')->group(function () {
+        Route::get('/', [CartController::class, 'index']);
+        Route::post('/items', [CartController::class, 'addItem']);
+        Route::put('/items/{itemId}', [CartController::class, 'updateItem']);
+        Route::delete('/items/{itemId}', [CartController::class, 'removeItem']);
+        Route::delete('/', [CartController::class, 'clear']);
+    });
+    
+    // E-commerce - Orders (public access for order status and creation)
+    Route::prefix('orders')->group(function () {
+        Route::post('/', [OrderController::class, 'store']); // Create order from cart
+        Route::get('/status/{orderNumber}', [OrderController::class, 'getStatus']); // Check order status by order number
+    });
 });
 
 // Protected API routes
@@ -132,6 +150,23 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
     Route::post('/ads/locations', [AdLocationController::class, 'store']);
     Route::put('/ads/locations/{id}', [AdLocationController::class, 'update']);
     Route::delete('/ads/locations/{id}', [AdLocationController::class, 'destroy']);
+    
+    // E-commerce - Shipping Addresses (authenticated users only)
+    Route::prefix('shipping-addresses')->group(function () {
+        Route::get('/', [ShippingAddressController::class, 'index']);
+        Route::post('/', [ShippingAddressController::class, 'store']);
+        Route::get('/{id}', [ShippingAddressController::class, 'show']);
+        Route::put('/{id}', [ShippingAddressController::class, 'update']);
+        Route::delete('/{id}', [ShippingAddressController::class, 'destroy']);
+        Route::patch('/{id}/set-default', [ShippingAddressController::class, 'setDefault']);
+    });
+    
+    // E-commerce - Orders (authenticated users only)
+    Route::prefix('orders')->group(function () {
+        Route::get('/', [OrderController::class, 'index']); // List user's orders
+        Route::get('/{id}', [OrderController::class, 'show']); // View specific order
+        Route::patch('/{id}/cancel', [OrderController::class, 'cancel']); // Cancel an order
+    });
 });
 
 // Protected API routes
