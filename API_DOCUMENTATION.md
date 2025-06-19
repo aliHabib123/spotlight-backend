@@ -1304,7 +1304,13 @@ These endpoints allow for management of targeted advertisements throughout the a
 
 **Endpoint:** `GET /api/v1/ad-locations/{location_id}/ads`
 
-**Description:** Retrieves all active ads for a specific location, sorted by display order.
+**Description:** Retrieves all active ads for a specific location by ID, sorted by display order.
+
+#### Get Active Ads for Location by Slug
+
+**Endpoint:** `GET /api/v1/ads/by-location-slug/{slug}`
+
+**Description:** Retrieves all active ads for a specific location by slug, sorted by display order.
 
 **Response:**
 ```json

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class AdLocation extends Model
 {
@@ -17,6 +18,7 @@ class AdLocation extends Model
      */
     protected $fillable = [
         'name',
+        'slug',
         'description',
     ];
     
@@ -44,5 +46,25 @@ class AdLocation extends Model
                     ->orWhere('end_date', '>=', now());
             })
             ->orderBy('display_order');
+    }
+    
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($adLocation) {
+            if (empty($adLocation->slug)) {
+                $adLocation->slug = Str::slug($adLocation->name);
+            }
+        });
+
+        static::updating(function ($adLocation) {
+            if ($adLocation->isDirty('name') && empty($adLocation->slug)) {
+                $adLocation->slug = Str::slug($adLocation->name);
+            }
+        });
     }
 }

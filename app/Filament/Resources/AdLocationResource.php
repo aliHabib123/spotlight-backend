@@ -40,6 +40,10 @@ class AdLocationResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->columnSpanFull(),
+                        Forms\Components\TextInput::make('slug')
+                            ->maxLength(255)
+                            ->helperText('Leave empty to auto-generate from name')
+                            ->columnSpanFull(),
                         Forms\Components\Textarea::make('description')
                             ->maxLength(65535)
                             ->columnSpanFull(),
@@ -52,6 +56,9 @@ class AdLocationResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('slug')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('description')

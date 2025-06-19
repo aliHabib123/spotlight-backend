@@ -93,10 +93,12 @@ Route::prefix('v1')->group(function () {
     Route::get('/ads', [AdController::class, 'index']);
     Route::get('/ads/{id}', [AdController::class, 'show']);
     Route::get('/ads/by-location/{locationId}', [AdController::class, 'getAdsByLocation']);
+    Route::get('/ads/by-location-slug/{slug}', [AdController::class, 'getAdsByLocationSlug']);
 
     // Ad Locations - Public
     Route::get('/ads/locations', [AdLocationController::class, 'index']);
     Route::get('/ads/locations/{id}', [AdLocationController::class, 'show']);
+    Route::get('/ads/locations/slug/{slug}', [AdLocationController::class, 'showBySlug']);
 });
 
 // Protected API routes

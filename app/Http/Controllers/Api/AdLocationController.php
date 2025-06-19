@@ -61,6 +61,19 @@ class AdLocationController extends Controller
             'data' => $adLocation
         ]);
     }
+    
+    /**
+     * Display the specified resource by slug.
+     */
+    public function showBySlug(string $slug)
+    {
+        $adLocation = AdLocation::where('slug', $slug)->with('activeAds')->firstOrFail();
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => $adLocation
+        ]);
+    }
 
     /**
      * Update the specified resource in storage.

@@ -26,11 +26,25 @@ class AdController extends Controller
     }
     
     /**
-     * Get ads for a specific location
+     * Get ads for a specific location by ID
      */
     public function getAdsByLocation($locationId)
     {
         $adLocation = AdLocation::findOrFail($locationId);
+        $ads = $adLocation->activeAds()->with(['user'])->get();
+        
+        return response()->json([
+            'status' => 'success',
+            'data' => $ads
+        ]);
+    }
+    
+    /**
+     * Get ads for a specific location by slug
+     */
+    public function getAdsByLocationSlug($slug)
+    {
+        $adLocation = AdLocation::where('slug', $slug)->firstOrFail();
         $ads = $adLocation->activeAds()->with(['user'])->get();
         
         return response()->json([
