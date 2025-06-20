@@ -1300,6 +1300,183 @@ These endpoints allow for management of banner advertisements throughout the app
 
 These endpoints allow for management of targeted advertisements throughout the application.
 
+## Contact Us API
+
+These endpoints allow users to submit contact form messages and administrators to manage them.
+
+### Submit Contact Form
+
+**Endpoint:** `POST /api/v1/contact`
+
+**Description:** Allows users to submit a contact form message.
+
+**Request:**
+```json
+{
+  "full_name": "John Doe",
+  "email": "john@example.com",
+  "mobile": "+1234567890",  // Optional
+  "subject": "General Inquiry",
+  "message": "I would like more information about your services."
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Your message has been sent successfully. We will contact you soon.",
+  "data": {
+    "id": 1,
+    "full_name": "John Doe",
+    "email": "john@example.com",
+    "mobile": "+1234567890",
+    "subject": "General Inquiry",
+    "message": "I would like more information about your services.",
+    "is_read": false,
+    "read_at": null,
+    "created_at": "2025-06-21T00:35:12.000000Z",
+    "updated_at": "2025-06-21T00:35:12.000000Z"
+  }
+}
+```
+
+### List Contact Messages (Admin Only)
+
+**Endpoint:** `GET /api/v1/contact-messages`
+
+**Description:** Retrieves a paginated list of all contact form submissions.
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "current_page": 1,
+    "data": [
+      {
+        "id": 1,
+        "full_name": "John Doe",
+        "email": "john@example.com",
+        "mobile": "+1234567890",
+        "subject": "General Inquiry",
+        "message": "I would like more information about your services.",
+        "is_read": false,
+        "read_at": null,
+        "created_at": "2025-06-21T00:35:12.000000Z",
+        "updated_at": "2025-06-21T00:35:12.000000Z"
+      },
+      // More messages...
+    ],
+    "first_page_url": "http://example.com/api/v1/contact-messages?page=1",
+    "from": 1,
+    "last_page": 3,
+    "last_page_url": "http://example.com/api/v1/contact-messages?page=3",
+    "links": [...],
+    "next_page_url": "http://example.com/api/v1/contact-messages?page=2",
+    "path": "http://example.com/api/v1/contact-messages",
+    "per_page": 15,
+    "prev_page_url": null,
+    "to": 15,
+    "total": 42
+  }
+}
+```
+
+### View Contact Message (Admin Only)
+
+**Endpoint:** `GET /api/v1/contact-messages/{id}`
+
+**Description:** Retrieves details of a specific contact message.
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Parameters:**
+- `id`: Contact message ID
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "full_name": "John Doe",
+    "email": "john@example.com",
+    "mobile": "+1234567890",
+    "subject": "General Inquiry",
+    "message": "I would like more information about your services.",
+    "is_read": false,
+    "read_at": null,
+    "created_at": "2025-06-21T00:35:12.000000Z",
+    "updated_at": "2025-06-21T00:35:12.000000Z"
+  }
+}
+```
+
+### Mark Message as Read (Admin Only)
+
+**Endpoint:** `PATCH /api/v1/contact-messages/{id}/mark-read`
+
+**Description:** Marks a contact message as read.
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Parameters:**
+- `id`: Contact message ID
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Message marked as read",
+  "data": {
+    "id": 1,
+    "full_name": "John Doe",
+    "email": "john@example.com",
+    "mobile": "+1234567890",
+    "subject": "General Inquiry",
+    "message": "I would like more information about your services.",
+    "is_read": true,
+    "read_at": "2025-06-21T00:45:23.000000Z",
+    "created_at": "2025-06-21T00:35:12.000000Z",
+    "updated_at": "2025-06-21T00:45:23.000000Z"
+  }
+}
+```
+
+### Delete Contact Message (Admin Only)
+
+**Endpoint:** `DELETE /api/v1/contact-messages/{id}`
+
+**Description:** Deletes a contact message.
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Parameters:**
+- `id`: Contact message ID
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Message deleted successfully"
+}
+```
+
 ### Ad Locations
 
 #### Get Ad Locations

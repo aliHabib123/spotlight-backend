@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\BannerLocationController;
 use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\OrderController;
@@ -118,6 +119,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/', [OrderController::class, 'store']); // Create order from cart
         Route::get('/status/{orderNumber}', [OrderController::class, 'getStatus']); // Check order status by order number
     });
+    
+    // Contact Us form submission (public access)
+    Route::post('/contact', [ContactController::class, 'submit']);
 });
 
 // Protected API routes
@@ -175,6 +179,14 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
         Route::post('/{id}', [SavedSpotlightController::class, 'save']); // Save a spotlight
         Route::delete('/{id}', [SavedSpotlightController::class, 'unsave']); // Unsave a spotlight
         Route::get('/{id}/check', [SavedSpotlightController::class, 'check']); // Check if a spotlight is saved
+    });
+    
+    // Contact Messages Management (admin only)
+    Route::middleware(['can:manage contact messages'])->prefix('contact-messages')->group(function () {
+        Route::get('/', [ContactController::class, 'index']); // List all contact messages
+        Route::get('/{id}', [ContactController::class, 'show']); // Show a specific message
+        Route::patch('/{id}/mark-read', [ContactController::class, 'markAsRead']); // Mark message as read
+        Route::delete('/{id}', [ContactController::class, 'destroy']); // Delete a message
     });
 });
 
