@@ -7,6 +7,7 @@ use App\Models\SpotlightCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class SpotlightCategoryController extends Controller
@@ -44,6 +45,15 @@ class SpotlightCategoryController extends Controller
             
             $categories = $query->orderBy('display_order')->get();
             
+            // Transform icon paths to full URLs
+            $categories = $categories->map(function($category) {
+                $categoryArray = $category->toArray();
+                if (!empty($categoryArray['icon']) && !filter_var($categoryArray['icon'], FILTER_VALIDATE_URL) && !str_starts_with($categoryArray['icon'], 'http')) {
+                    $categoryArray['icon'] = asset('storage/' . $categoryArray['icon']);
+                }
+                return $categoryArray;
+            });
+            
             // Transform to hierarchical structure if requested
             if ($request->input('hierarchical', false)) {
                 return $this->buildCategoryTree($categories);
@@ -69,13 +79,30 @@ class SpotlightCategoryController extends Controller
                 'description' => 'nullable|string',
                 'parent_id' => 'nullable|exists:spotlight_categories,id',
                 'is_active' => 'boolean',
-                'icon' => 'nullable|string|max:50',
+                'icon' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Updated to accept image files
                 'display_order' => 'nullable|integer|min:0',
                 'attribute_definitions' => 'nullable|array',
                 'attribute_definitions.*' => 'exists:spotlight_attribute_definitions,id',
             ]);
             
+            // Remove icon from validated data as we'll handle it separately
+            $iconFile = $request->file('icon');
+            if (isset($validated['icon'])) {
+                unset($validated['icon']);
+            }
+            
             $category = SpotlightCategory::create($validated);
+            
+            // Handle icon upload if provided
+            if ($iconFile) {
+                // Store the file in the public disk under category-icons directory
+                $path = $iconFile->store('category-icons', 'public');
+                
+                // Update the category with the icon path
+                $category->update([
+                    'icon' => $path
+                ]);
+            }
             
             // Sync attribute definitions if provided
             if (isset($validated['attribute_definitions'])) {
@@ -86,9 +113,15 @@ class SpotlightCategoryController extends Controller
             Cache::forget('spotlight_categories_0');
             Cache::forget('spotlight_categories_1');
             
+            // Transform the icon path to a full URL if it exists and is a file path
+            $categoryData = $category->load('parent', 'attributeDefinitions')->toArray();
+            if (!empty($categoryData['icon']) && !filter_var($categoryData['icon'], FILTER_VALIDATE_URL) && !str_starts_with($categoryData['icon'], 'http')) {
+                $categoryData['icon'] = asset('storage/' . $categoryData['icon']);
+            }
+            
             return response()->json([
                 'message' => 'Category created successfully',
-                'data' => $category->load('parent', 'attributeDefinitions')
+                'data' => $categoryData
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
@@ -106,7 +139,16 @@ class SpotlightCategoryController extends Controller
      */
     public function show(SpotlightCategory $category)
     {
-        return response()->json($category->load('parent', 'attributeDefinitions'));
+        // Load relationships
+        $category->load('parent', 'attributeDefinitions');
+        
+        // Transform the icon path to a full URL if it exists and is a file path
+        $categoryData = $category->toArray();
+        if (!empty($categoryData['icon']) && !filter_var($categoryData['icon'], FILTER_VALIDATE_URL) && !str_starts_with($categoryData['icon'], 'http')) {
+            $categoryData['icon'] = asset('storage/' . $categoryData['icon']);
+        }
+        
+        return response()->json($categoryData);
     }
     
     /**
@@ -126,7 +168,7 @@ class SpotlightCategoryController extends Controller
                 'description' => 'nullable|string',
                 'parent_id' => 'nullable|exists:spotlight_categories,id',
                 'is_active' => 'boolean',
-                'icon' => 'nullable|string|max:50',
+                'icon' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Updated to accept image files
                 'display_order' => 'nullable|integer|min:0',
                 'attribute_definitions' => 'nullable|array',
                 'attribute_definitions.*' => 'exists:spotlight_attribute_definitions,id',
@@ -139,7 +181,29 @@ class SpotlightCategoryController extends Controller
                 ], 422);
             }
             
+            // Remove icon from validated data as we'll handle it separately
+            $iconFile = $request->file('icon');
+            if (isset($validated['icon'])) {
+                unset($validated['icon']);
+            }
+            
             $category->update($validated);
+            
+            // Handle icon upload if provided
+            if ($iconFile) {
+                // Delete old icon if exists
+                if ($category->icon && Storage::disk('public')->exists($category->icon)) {
+                    Storage::disk('public')->delete($category->icon);
+                }
+                
+                // Store the file in the public disk under category-icons directory
+                $path = $iconFile->store('category-icons', 'public');
+                
+                // Update the category with the icon path
+                $category->update([
+                    'icon' => $path
+                ]);
+            }
             
             // Sync attribute definitions if provided
             if (isset($validated['attribute_definitions'])) {
@@ -150,9 +214,15 @@ class SpotlightCategoryController extends Controller
             Cache::forget('spotlight_categories_0');
             Cache::forget('spotlight_categories_1');
             
+            // Transform the icon path to a full URL if it exists and is a file path
+            $categoryData = $category->load('parent', 'attributeDefinitions')->toArray();
+            if (!empty($categoryData['icon']) && !filter_var($categoryData['icon'], FILTER_VALIDATE_URL) && !str_starts_with($categoryData['icon'], 'http')) {
+                $categoryData['icon'] = asset('storage/' . $categoryData['icon']);
+            }
+            
             return response()->json([
                 'message' => 'Category updated successfully',
-                'data' => $category->load('parent', 'attributeDefinitions')
+                'data' => $categoryData
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -179,6 +249,11 @@ class SpotlightCategoryController extends Controller
             ], 422);
         }
         
+        // Delete the icon file if it exists
+        if ($category->icon && Storage::disk('public')->exists($category->icon)) {
+            Storage::disk('public')->delete($category->icon);
+        }
+        
         $category->delete();
         
         // Clear categories cache
@@ -202,10 +277,18 @@ class SpotlightCategoryController extends Controller
         $tree = [];
         
         foreach ($categories as $category) {
-            if ($category->parent_id == $parentId) {
-                $children = $this->buildCategoryTree($categories, $category->id);
+            // Check if we're working with an array or an object
+            $categoryId = is_array($category) ? $category['id'] : $category->id;
+            $categoryParentId = is_array($category) ? $category['parent_id'] : $category->parent_id;
+            
+            if ($categoryParentId == $parentId) {
+                $children = $this->buildCategoryTree($categories, $categoryId);
                 if ($children) {
-                    $category->children = $children;
+                    if (is_array($category)) {
+                        $category['children'] = $children;
+                    } else {
+                        $category->children = $children;
+                    }
                 }
                 $tree[] = $category;
             }

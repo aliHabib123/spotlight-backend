@@ -45,9 +45,14 @@ class SpotlightCategoryResource extends Resource
                             ->helperText('Auto-generated from name if left empty.')
                             ->rules(['alpha_dash']),
                             
-                        Forms\Components\TextInput::make('icon')
-                            ->maxLength(50)
-                            ->helperText('Icon class or name (e.g., "heroicon-o-home")'),
+                        Forms\Components\FileUpload::make('icon')
+                            ->image()
+                            ->imageEditor()
+                            ->directory('category-icons')
+                            ->visibility('public')
+                            ->maxSize(2048)
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg'])
+                            ->helperText('Upload a PNG or JPG image for the category icon'),
                             
                         Forms\Components\Textarea::make('description')
                             ->maxLength(1000)
@@ -80,6 +85,15 @@ class SpotlightCategoryResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('icon')
+                    ->label('Icon')
+                    ->circular()
+                    ->defaultImageUrl(function ($record) {
+                        return $record->icon ? null : asset('images/default-category-icon.png');
+                    })
+                    ->width(40)
+                    ->height(40),
+                    
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
