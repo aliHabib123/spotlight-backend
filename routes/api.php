@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdController;
 use App\Http\Controllers\Api\AdLocationController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AboutUsController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\BannerLocationController;
 use App\Http\Controllers\Api\CartController;
@@ -49,6 +50,8 @@ Route::prefix('v1/auth')->group(function () {
 
 // Public API routes
 Route::prefix('v1')->group(function () {
+    // About Us
+    Route::get('/about-us', [AboutUsController::class, 'get']);
     // News Categories
     Route::get('/news/categories', [NewsCategoryController::class, 'index']);
     Route::get('/news/categories/{id}', [NewsCategoryController::class, 'show']);
@@ -187,6 +190,11 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
         Route::get('/{id}', [ContactController::class, 'show']); // Show a specific message
         Route::patch('/{id}/mark-read', [ContactController::class, 'markAsRead']); // Mark message as read
         Route::delete('/{id}', [ContactController::class, 'destroy']); // Delete a message
+    });
+    
+    // About Us Management (admin only)
+    Route::middleware(['can:manage about us'])->prefix('about-us')->group(function () {
+        Route::post('/update', [AboutUsController::class, 'update']); // Update About Us content
     });
 });
 
