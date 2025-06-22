@@ -11,8 +11,11 @@ use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SavedSpotlightController;
 use App\Http\Controllers\Api\ShippingAddressController;
+use App\Http\Controllers\Api\ShopCategoryController;
+use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\SpotlightController;
 use App\Http\Controllers\Api\SpotlightCategoryController;
 use App\Http\Controllers\Api\TagController;
@@ -125,6 +128,27 @@ Route::prefix('v1')->group(function () {
     
     // Contact Us form submission (public access)
     Route::post('/contact', [ContactController::class, 'submit']);
+    
+    // Shop Categories - Public
+    Route::prefix('shop-categories')->group(function () {
+        Route::get('/', [ShopCategoryController::class, 'index']);
+        Route::get('/{id}', [ShopCategoryController::class, 'show']);
+        Route::get('/{id}/shops', [ShopCategoryController::class, 'shops']);
+    });
+    
+    // Shops - Public
+    Route::prefix('shops')->group(function () {
+        Route::get('/', [ShopController::class, 'index']);
+        Route::get('/{id}', [ShopController::class, 'show']);
+        Route::get('/{id}/products', [ShopController::class, 'products']);
+    });
+    
+    // Products - Public
+    Route::prefix('products')->group(function () {
+        Route::get('/', [ProductController::class, 'index']);
+        Route::get('/{id}', [ProductController::class, 'show']);
+        Route::get('/by-category/{id}', [ProductController::class, 'byCategory']);
+    });
 });
 
 // Protected API routes
