@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class SpotlightController extends Controller
@@ -88,7 +90,7 @@ class SpotlightController extends Controller
         $sortDirection = $request->input('sort_direction', 'desc');
         $query->orderBy($sortField, $sortDirection);
         
-        return $query->paginate($request->input('per_page', 15));
+        return response()->json($query->paginate($request->input('per_page', 15)));
     }
 
     /**
@@ -101,7 +103,7 @@ class SpotlightController extends Controller
     {
         $cacheKey = 'featured_spotlights_' . $request->input('per_page', 8);
         
-        return Cache::remember($cacheKey, 3600, function() use ($request) {
+        $paginator = Cache::remember($cacheKey, 3600, function() use ($request) {
             return Spotlight::with(['category', 'tags', 'location'])
                 ->where('is_featured', true)
                 // Filter by is_active if that column exists
@@ -111,6 +113,8 @@ class SpotlightController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->input('per_page', 8));
         });
+        
+        return response()->json($paginator);
     }
     
     /**
@@ -123,7 +127,7 @@ class SpotlightController extends Controller
     {
         $cacheKey = 'trending_spotlights_' . $request->input('per_page', 8);
         
-        return Cache::remember($cacheKey, 3600, function() use ($request) {
+        $paginator = Cache::remember($cacheKey, 3600, function() use ($request) {
             return Spotlight::with(['category', 'tags', 'location'])
                 ->where('is_trending', true)
                 // Filter by is_active if that column exists
@@ -133,6 +137,8 @@ class SpotlightController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->input('per_page', 8));
         });
+        
+        return response()->json($paginator);
     }
 
     /**
@@ -152,7 +158,7 @@ class SpotlightController extends Controller
             $categoryIds = array_merge($categoryIds, $children->pluck('id')->toArray());
         }
         
-        return Spotlight::with(['category', 'tags', 'location'])
+        $paginator = Spotlight::with(['category', 'tags', 'location'])
             ->whereIn('category_id', $categoryIds)
             // Filter by is_active if that column exists (assuming spotlights have an active state)
             ->when(Schema::hasColumn('spotlights', 'is_active'), function($query) {
@@ -160,6 +166,8 @@ class SpotlightController extends Controller
             })
             ->orderBy('created_at', 'desc')
             ->paginate($request->input('per_page', 15));
+            
+        return response()->json($paginator);
     }
 
     /**
@@ -182,6 +190,15 @@ class SpotlightController extends Controller
             'contact_email' => 'nullable|email',
             'contact_phone' => 'nullable|string|max:20',
             'website_url' => 'nullable|url',
+            'video_provider' => 'nullable|string|in:youtube,vimeo,self',
+            'video_url' => 'nullable|string',
+            'video_file' => [
+                'nullable',
+                'required_if:video_provider,self',
+                'file',
+                'mimes:mp4,mov,avi,wmv',
+                'max:102400', // 100MB max file size
+            ],
             'tags' => 'nullable|array',
             'tags.*' => 'exists:tags,id',
             'attributes' => 'nullable|array',
@@ -190,6 +207,22 @@ class SpotlightController extends Controller
         try {
             return DB::transaction(function() use ($validated, $request) {
                 // Create spotlight
+                // Handle video upload for self-hosted videos
+                $videoUrl = null;
+                // Handle video provider and URL
+                if (isset($validated['video_provider'])) {
+                    if ($validated['video_provider'] === 'self') {
+                        if ($request->hasFile('video_file')) {
+                            // Handle direct file upload from API
+                            $videoPath = $request->file('video_file')->store('spotlight-videos', 'public');
+                            $validated['video_url'] = asset('storage/' . $videoPath);
+                        }
+                        // For Filament admin panel uploads, the video_url is already set correctly
+                        // because we're using the video_url field directly in the form
+                    }
+                    // For YouTube, Vimeo, etc. the video_url is already set in the form
+                }
+                
                 $spotlight = Spotlight::create([
                     'name' => $validated['name'],
                     'description' => $validated['description'],
@@ -200,7 +233,9 @@ class SpotlightController extends Controller
                     'contact_email' => $validated['contact_email'] ?? null,
                     'contact_phone' => $validated['contact_phone'] ?? null,
                     'website_url' => $validated['website_url'] ?? null,
-                    'user_id' => auth()->id(),
+                    'video_provider' => $validated['video_provider'] ?? null,
+                    'video_url' => $videoUrl,
+                    'user_id' => Auth::id(),
                 ]);
                 
                 // Sync tags
@@ -293,6 +328,15 @@ class SpotlightController extends Controller
             'contact_email' => 'nullable|email',
             'contact_phone' => 'nullable|string|max:20',
             'website_url' => 'nullable|url',
+            'video_provider' => 'nullable|string|in:youtube,vimeo,self',
+            'video_url' => 'nullable|string',
+            'video_file' => [
+                'nullable',
+                'required_if:video_provider,self',
+                'file',
+                'mimes:mp4,mov,avi,wmv',
+                'max:102400', // 100MB max file size
+            ],
             'tags' => 'nullable|array',
             'tags.*' => 'exists:tags,id',
             'attributes' => 'nullable|array',
@@ -300,6 +344,40 @@ class SpotlightController extends Controller
         
         try {
             return DB::transaction(function() use ($validated, $request, $spotlight) {
+                // Handle video upload for self-hosted videos
+                // Handle video provider and URL for update
+                if (isset($validated['video_provider'])) {
+                    if ($validated['video_provider'] === 'self') {
+                        // Check if we need to remove old video file when uploading a new one
+                        // Only do this for API uploads or if the video URL has changed
+                        $newVideoUrl = $validated['video_url'] ?? null;
+                        if ($spotlight->video_provider === 'self' && $spotlight->video_url && 
+                            ($request->hasFile('video_file') || 
+                             ($newVideoUrl && $newVideoUrl !== $spotlight->video_url))) {
+                            
+                            $oldPath = str_replace(asset('storage/'), '', $spotlight->video_url);
+                            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                            }
+                        }
+                        
+                        if ($request->hasFile('video_file')) {
+                            // Handle direct file upload from API
+                            $videoPath = $request->file('video_file')->store('spotlight-videos', 'public');
+                            $validated['video_url'] = asset('storage/' . $videoPath);
+                        }
+                        // For Filament admin panel uploads, the video_url is already set correctly
+                        // because we're using the video_url field directly in the form
+                        
+                        // Debug log to see what's happening
+                        \Illuminate\Support\Facades\Log::debug('Video update data', [
+                            'video_provider' => $validated['video_provider'],
+                            'video_url' => $validated['video_url'] ?? null
+                        ]);
+                    }
+                    // For other providers, video_url is already set in the form
+                }
+                
                 // Update spotlight
                 $spotlight->update($validated);
                 

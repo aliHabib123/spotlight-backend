@@ -43,6 +43,26 @@ class EditSpotlight extends EditRecord
         return $form;
     }
     
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        // Handle video file upload
+        if (isset($data['video_provider']) && $data['video_provider'] === 'self' && isset($data['video_file'])) {
+            // Get the file path from Filament's temporary upload
+            $filePath = $data['video_file'];
+            
+            // Set the video URL to the storage path
+            $data['video_url'] = asset('storage/' . $filePath);
+            
+            // Log for debugging
+            \Illuminate\Support\Facades\Log::debug('Video file upload in Filament', [
+                'video_file' => $filePath,
+                'video_url' => $data['video_url']
+            ]);
+        }
+        
+        return $data;
+    }
+    
     protected function addAttributeFields(Form $form): void
     {
         // Get category attribute definitions

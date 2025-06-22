@@ -1296,6 +1296,72 @@ Many API responses are cached for improved performance. Cache invalidation happe
 
 These endpoints allow for management of banner advertisements throughout the application.
 
+## About Us Management
+
+These endpoints allow for retrieving and managing the About Us page content.
+
+### Get About Us Content
+
+**Endpoint:** `GET /api/v1/about-us`
+
+**Authentication:** Not required
+
+**Description:** Retrieves the About Us page content including image, text blocks, and slogan.
+
+**Response:**
+```json
+{
+  "data": {
+    "id": 1,
+    "image": "https://example.com/storage/about-us/about-image.jpg",
+    "text1": "<p>Main content for the About Us page.</p>",
+    "text2": "<p>Additional information about the company.</p>",
+    "text3": "<p>More details about services or history.</p>",
+    "slogan": "Your Trusted Partner",
+    "created_at": "2025-06-20T23:55:00.000000Z",
+    "updated_at": "2025-06-21T01:30:00.000000Z"
+  }
+}
+```
+
+**Note:** If no About Us content exists yet, the response will contain null values for all fields.
+
+### Update About Us Content (Protected)
+
+**Endpoint:** `POST /api/v1/about-us/update`
+
+**Authentication:** Required (JWT)
+
+**Permissions:** User must have 'manage about us' permission
+
+**Request Format:** `multipart/form-data`
+
+**Request Parameters:**
+- `image` (optional): Image file (JPEG, PNG, JPG, max 2MB)
+- `text1` (optional): Main content text (HTML supported)
+- `text2` (optional): Secondary content text (HTML supported)
+- `text3` (optional): Additional content text (HTML supported)
+- `slogan` (optional): Short slogan or tagline (max 255 characters)
+
+**Response:**
+```json
+{
+  "message": "About Us content updated successfully",
+  "data": {
+    "id": 1,
+    "image": "https://example.com/storage/about-us/about-image.jpg",
+    "text1": "<p>Updated main content for the About Us page.</p>",
+    "text2": "<p>Updated additional information about the company.</p>",
+    "text3": "<p>Updated details about services or history.</p>",
+    "slogan": "Your Trusted Partner Since 2025",
+    "created_at": "2025-06-20T23:55:00.000000Z",
+    "updated_at": "2025-06-21T02:15:00.000000Z"
+  }
+}
+```
+
+**Note:** For the `image` field, use multipart/form-data to upload the image file. The API will handle both creating new content if none exists and updating existing content.
+
 ## Ad Management
 
 These endpoints allow for management of targeted advertisements throughout the application.

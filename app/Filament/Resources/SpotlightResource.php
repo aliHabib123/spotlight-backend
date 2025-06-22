@@ -249,9 +249,10 @@ class SpotlightResource extends Resource
                                             ->options([
                                                 'youtube' => 'YouTube',
                                                 'vimeo' => 'Vimeo',
-                                                'self_hosted' => 'Self Hosted',
+                                                'self' => 'Self Hosted',
                                                 'other' => 'Other',
                                             ])
+                                            ->live()
                                             ->visible(fn (Forms\Get $get) => $get('has_video')),
                                             
                                         Forms\Components\TextInput::make('video_id')
@@ -259,6 +260,14 @@ class SpotlightResource extends Resource
                                             ->maxLength(100)
                                             ->helperText('ID of the video on the provider (e.g., YouTube video ID)')
                                             ->visible(fn (Forms\Get $get) => $get('has_video') && in_array($get('video_provider'), ['youtube', 'vimeo'])),
+                                            
+                                        Forms\Components\FileUpload::make('video_file')
+                                            ->label('Video File')
+                                            ->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv'])
+                                            ->maxSize(100 * 1024) // 100MB max size
+                                            ->directory('spotlight-videos')
+                                            ->helperText('Upload MP4, MOV, AVI, or WMV files (max 100MB)')
+                                            ->visible(fn (Forms\Get $get) => $get('has_video') && $get('video_provider') === 'self'),
                                     ]),
                             ]),
                             
