@@ -35,10 +35,8 @@ class EditSpotlight extends EditRecord
     {
         $form = parent::form($form);
         
-        // If we have a record and a selected category, let's add the dynamic attribute fields
-        if ($this->record && $this->record->category_id) {
-            $this->addAttributeFields($form);
-        }
+        // We now handle dynamic attribute fields in the main resource form
+        // No need to add them here anymore
         
         return $form;
     }

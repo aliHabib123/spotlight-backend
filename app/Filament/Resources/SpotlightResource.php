@@ -60,7 +60,7 @@ class SpotlightResource extends Resource
                                             ->helperText('Select from existing categories. New categories must be created in the Categories section.'),
                                             
                                         Forms\Components\Section::make('Category Attributes')
-                                            ->schema(function (Forms\Get $get) {
+                                            ->schema(function (Forms\Get $get, $livewire) {
                                                 $categoryId = $get('category_id');
                                                 if (empty($categoryId)) {
                                                     return [
@@ -82,6 +82,15 @@ class SpotlightResource extends Resource
                                                 }
                                                 
                                                 $attributeFields = [];
+                                                
+                                                // Get existing attribute values if we're editing a record
+                                                $existingValues = [];
+                                                $record = $livewire->record;
+                                                
+                                                if ($record) {
+                                                    $attributesByDef = $record->getAttributesByDefinition();
+                                                }
+                                                
                                                 foreach ($categoryAttributes as $categoryAttribute) {
                                                     $definition = $categoryAttribute->attributeDefinition;
                                                     if (!$definition) continue;
@@ -91,20 +100,59 @@ class SpotlightResource extends Resource
                                                     
                                                     $fieldName = "attributes.{$definition->id}";
                                                     
+                                                    // Get current value if editing and value exists
+                                                    $currentValue = null;
+                                                    $currentOptionId = null;
+                                                    $currentOptionIds = [];
+                                                    
+                                                    if ($record && isset($attributesByDef[$definition->id]) && !empty($attributesByDef[$definition->id]['values'])) {
+                                                        $values = $attributesByDef[$definition->id]['values'];
+                                                        
+                                                        if ($fieldType === 'select' && isset($values[0]->option_id)) {
+                                                            $currentOptionId = $values[0]->option_id;
+                                                        } elseif ($fieldType === 'multiselect') {
+                                                            foreach ($values as $value) {
+                                                                if (isset($value->option_id)) {
+                                                                    $currentOptionIds[] = $value->option_id;
+                                                                }
+                                                            }
+                                                        } elseif (isset($values[0]->value)) {
+                                                            $currentValue = $values[0]->value;
+                                                            
+                                                            // Convert boolean string to actual boolean
+                                                            if ($fieldType === 'boolean' || $fieldType === 'toggle') {
+                                                                $currentValue = filter_var($currentValue, FILTER_VALIDATE_BOOLEAN);
+                                                            }
+                                                        }
+                                                    }
+                                                    
                                                     // Create appropriate field type based on definition
                                                     switch($fieldType) {
                                                         case 'text':
                                                             $attributeFields[] = Forms\Components\TextInput::make($fieldName)
                                                                 ->label($definition->name)
                                                                 ->helperText($definition->description)
-                                                                ->required($isRequired);
+                                                                ->required($isRequired)
+                                                                ->default($currentValue);
                                                             break;
                                                             
                                                         case 'textarea':
                                                             $attributeFields[] = Forms\Components\Textarea::make($fieldName)
                                                                 ->label($definition->name)
                                                                 ->helperText($definition->description)
-                                                                ->required($isRequired);
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNull('attribute_option_id')
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue) {
+                                                                            $component->state($attributeValue->value);
+                                                                        }
+                                                                    }
+                                                                });
                                                             break;
                                                             
                                                         case 'number':
@@ -112,7 +160,8 @@ class SpotlightResource extends Resource
                                                                 ->label($definition->name)
                                                                 ->helperText($definition->description)
                                                                 ->numeric()
-                                                                ->required($isRequired);
+                                                                ->required($isRequired)
+                                                                ->default($currentValue);
                                                             break;
                                                             
                                                         case 'boolean':
@@ -120,16 +169,53 @@ class SpotlightResource extends Resource
                                                             $attributeFields[] = Forms\Components\Toggle::make($fieldName)
                                                                 ->label($definition->name)
                                                                 ->helperText($definition->description)
-                                                                ->required($isRequired);
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNull('attribute_option_id')
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue) {
+                                                                            // Convert string 'true'/'false' to boolean if needed
+                                                                            $value = $attributeValue->value;
+                                                                            if (is_string($value)) {
+                                                                                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+                                                                            }
+                                                                            $component->state($value);
+                                                                        }
+                                                                    }
+                                                                });
                                                             break;
                                                             
                                                         case 'select':
                                                             $options = $definition->options->pluck('display_label', 'id')->toArray();
+                                                            
+                                                            // Debug to verify option values
+                                                            \Illuminate\Support\Facades\Log::debug('Select field options', [
+                                                                'definition' => $definition->name,
+                                                                'options' => $options,
+                                                                'currentOptionId' => $currentOptionId,
+                                                                'values' => $record ? ($attributesByDef[$definition->id]['values'] ?? []) : []
+                                                            ]);
+                                                            
                                                             $attributeFields[] = Forms\Components\Select::make($fieldName)
                                                                 ->label($definition->name)
                                                                 ->helperText($definition->description)
                                                                 ->options($options)
-                                                                ->required($isRequired);
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue && $attributeValue->attribute_option_id) {
+                                                                            $component->state($attributeValue->attribute_option_id);
+                                                                        }
+                                                                    }
+                                                                });
                                                             break;
                                                             
                                                         case 'multiselect':
@@ -139,35 +225,97 @@ class SpotlightResource extends Resource
                                                                 ->helperText($definition->description)
                                                                 ->options($options)
                                                                 ->multiple()
-                                                                ->required($isRequired);
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValues = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNotNull('attribute_option_id')
+                                                                            ->pluck('attribute_option_id')
+                                                                            ->toArray();
+                                                                            
+                                                                        if (!empty($attributeValues)) {
+                                                                            $component->state($attributeValues);
+                                                                        }
+                                                                    }
+                                                                });
                                                             break;
                                                             
                                                         case 'date':
                                                             $attributeFields[] = Forms\Components\DatePicker::make($fieldName)
                                                                 ->label($definition->name)
                                                                 ->helperText($definition->description)
-                                                                ->required($isRequired);
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNull('attribute_option_id')
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue && $attributeValue->value) {
+                                                                            $component->state($attributeValue->value);
+                                                                        }
+                                                                    }
+                                                                });
                                                             break;
                                                             
                                                         case 'time':
                                                             $attributeFields[] = Forms\Components\TimePicker::make($fieldName)
                                                                 ->label($definition->name)
                                                                 ->helperText($definition->description)
-                                                                ->required($isRequired);
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNull('attribute_option_id')
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue && $attributeValue->value) {
+                                                                            $component->state($attributeValue->value);
+                                                                        }
+                                                                    }
+                                                                });
                                                             break;
                                                             
                                                         case 'datetime':
                                                             $attributeFields[] = Forms\Components\DateTimePicker::make($fieldName)
                                                                 ->label($definition->name)
                                                                 ->helperText($definition->description)
-                                                                ->required($isRequired);
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNull('attribute_option_id')
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue && $attributeValue->value) {
+                                                                            $component->state($attributeValue->value);
+                                                                        }
+                                                                    }
+                                                                });
                                                             break;
-                                                        
+                                                            
                                                         default:
                                                             $attributeFields[] = Forms\Components\TextInput::make($fieldName)
                                                                 ->label($definition->name)
                                                                 ->helperText($definition->description)
-                                                                ->required($isRequired);
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNull('attribute_option_id')
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue) {
+                                                                            $component->state($attributeValue->value);
+                                                                        }
+                                                                    }
+                                                                });
+                                                            break;
                                                     }
                                                 }
                                                 
@@ -588,7 +736,7 @@ class SpotlightResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\AttributeValuesRelationManager::class,
+            // Removed AttributeValuesRelationManager as we now handle attributes directly in the form
             RelationManagers\MediaRelationManager::class,
         ];
     }

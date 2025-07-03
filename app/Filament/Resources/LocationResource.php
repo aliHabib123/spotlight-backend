@@ -31,29 +31,17 @@ class LocationResource extends Resource
                             ->required()
                             ->maxLength(255),
                             
-                        Forms\Components\TextInput::make('address_line_1')
-                            ->required()
-                            ->maxLength(255),
-                            
-                        Forms\Components\TextInput::make('address_line_2')
-                            ->maxLength(255),
-                            
                         Forms\Components\TextInput::make('city')
                             ->required()
                             ->maxLength(100),
                             
-                        Forms\Components\TextInput::make('state')
-                            ->maxLength(100),
-                            
-                        Forms\Components\TextInput::make('postal_code')
-                            ->maxLength(20),
-                            
-                        Forms\Components\TextInput::make('country')
-                            ->required()
-                            ->maxLength(100)
+                        // Hidden field with default value since it's required in the database
+                        Forms\Components\Hidden::make('country')
                             ->default('Lebanon'),
                     ]),
                     
+                // Geographic Coordinates section hidden for now - for future implementation
+                /* 
                 Forms\Components\Section::make('Geographic Coordinates')
                     ->schema([
                         Forms\Components\Grid::make()
@@ -75,6 +63,7 @@ class LocationResource extends Resource
                             ->helperText('Add any additional location information required.')
                             ->columnSpanFull(),
                     ]),
+                */
             ]);
     }
 
