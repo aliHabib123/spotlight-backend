@@ -57,21 +57,7 @@ class SpotlightResource extends Resource
                                             ->searchable()
                                             ->preload()
                                             ->live()
-                                            ->createOptionForm([
-                                                Forms\Components\TextInput::make('name')
-                                                    ->required()
-                                                    ->maxLength(255)
-                                                    ->live(onBlur: true)
-                                                    ->afterStateUpdated(fn ($state, Forms\Set $set) => 
-                                                        $set('slug', Str::slug($state))
-                                                    ),
-                                                Forms\Components\TextInput::make('slug')
-                                                    ->required()
-                                                    ->maxLength(255)
-                                                    ->rules(['alpha_dash']),
-                                                Forms\Components\Toggle::make('is_active')
-                                                    ->default(true),
-                                            ]),
+                                            ->helperText('Select from existing categories. New categories must be created in the Categories section.'),
                                             
                                         Forms\Components\Section::make('Category Attributes')
                                             ->schema(function (Forms\Get $get) {
@@ -195,21 +181,7 @@ class SpotlightResource extends Resource
                                             ->required()
                                             ->searchable()
                                             ->preload()
-                                            ->createOptionForm([
-                                                Forms\Components\TextInput::make('name')
-                                                    ->required()
-                                                    ->maxLength(255),
-                                                Forms\Components\TextInput::make('address_line_1')
-                                                    ->required()
-                                                    ->maxLength(255),
-                                                Forms\Components\TextInput::make('city')
-                                                    ->required()
-                                                    ->maxLength(100),
-                                                Forms\Components\TextInput::make('country')
-                                                    ->required()
-                                                    ->default('Lebanon')
-                                                    ->maxLength(100),
-                                            ]),
+                                            ->helperText('Select from existing locations. New locations must be created in the Locations section.'),
                                             
                                         Forms\Components\Select::make('user_id')
                                             ->relationship('user', 'name')
