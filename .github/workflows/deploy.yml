@@ -22,7 +22,7 @@ jobs:
 
     - name: Deploy over SSH
       run: |
-        ssh -i ~/.ssh/id_rsa_deploy ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+        ssh -i ~/.ssh/id_rsa_github ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           cd ${{ secrets.TARGET_DIR }}
           # Stash any local changes to prevent conflicts
           git stash
