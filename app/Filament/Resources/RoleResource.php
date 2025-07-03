@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -18,6 +19,20 @@ class RoleResource extends Resource
     protected static ?string $model = Role::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
+
+    public static function canAccess(): bool
+    {
+        // Only super-admin users can manage user types
+        if (!Auth::check()) {
+            return false;
+        }
+        
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        
+        // Check if the user has the super-admin role
+        return $user->hasRole('super-admin');
+    }
     
     protected static ?string $navigationGroup = 'User Management';
     

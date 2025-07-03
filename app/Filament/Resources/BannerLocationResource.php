@@ -12,10 +12,25 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class BannerLocationResource extends Resource
 {
     protected static ?string $model = BannerLocation::class;
+
+    public static function canAccess(): bool
+    {
+        // Only super-admin users can manage banner locations
+        if (!Auth::check()) {
+            return false;
+        }
+        
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        
+        // Check if the user has the super-admin role
+        return $user->hasRole('super-admin');
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-group';
     
