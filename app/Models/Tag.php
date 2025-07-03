@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Tag extends Model
@@ -21,6 +22,7 @@ class Tag extends Model
         'type',
         'color',
         'display_order',
+        'category_id',
     ];
     
     /**
@@ -29,6 +31,14 @@ class Tag extends Model
     public function spotlights(): BelongsToMany
     {
         return $this->belongsToMany(Spotlight::class);
+    }
+    
+    /**
+     * Get the category that this tag belongs to.
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(SpotlightCategory::class, 'category_id');
     }
     
     /**

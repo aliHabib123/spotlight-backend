@@ -1,0 +1,55 @@
+name: Deploy Spotlight Backend to Hostgator
+
+on:
+  push:
+    branches:
+      - release  # Change this to your main branch if needed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa_deploy
+        chmod 600 ~/.ssh/id_rsa_deploy
+        ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+    - name: Deploy over SSH
+      run: |
+        ssh -i ~/.ssh/id_rsa_deploy ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          cd ${{ secrets.TARGET_DIR }}
+          
+          # Stash any local changes to prevent conflicts
+          git stash
+          
+          # Fetch latest changes
+          git fetch origin release
+          
+          # Reset to the latest commit on the release branch
+          git reset --hard origin/release
+          
+          # Install dependencies
+          composer install --no-dev --optimize-autoloader
+          
+          # Laravel deployment commands
+          php artisan migrate --force
+          php artisan config:clear
+          php artisan config:cache
+          php artisan route:clear
+          php artisan route:cache
+          php artisan view:clear
+          php artisan view:cache
+          
+          # Set proper permissions
+          chmod -R 775 storage bootstrap/cache
+          
+          # Clear any application caches
+          php artisan optimize:clear
+          php artisan optimize
+        EOF

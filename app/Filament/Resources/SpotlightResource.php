@@ -6,6 +6,7 @@ use App\Filament\Resources\SpotlightResource\Pages;
 use App\Filament\Resources\SpotlightResource\RelationManagers;
 use App\Models\Spotlight;
 use App\Models\SpotlightCategory;
+use App\Models\SpotlightCategoryAttribute;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -55,42 +56,280 @@ class SpotlightResource extends Resource
                                             ->required()
                                             ->searchable()
                                             ->preload()
-                                            ->createOptionForm([
-                                                Forms\Components\TextInput::make('name')
-                                                    ->required()
-                                                    ->maxLength(255)
-                                                    ->live(onBlur: true)
-                                                    ->afterStateUpdated(fn ($state, Forms\Set $set) => 
-                                                        $set('slug', Str::slug($state))
-                                                    ),
-                                                Forms\Components\TextInput::make('slug')
-                                                    ->required()
-                                                    ->maxLength(255)
-                                                    ->rules(['alpha_dash']),
-                                                Forms\Components\Toggle::make('is_active')
-                                                    ->default(true),
-                                            ]),
+                                            ->live()
+                                            ->helperText('Select from existing categories. New categories must be created in the Categories section.'),
+                                            
+                                        Forms\Components\Section::make('Category Attributes')
+                                            ->schema(function (Forms\Get $get, $livewire) {
+                                                $categoryId = $get('category_id');
+                                                if (empty($categoryId)) {
+                                                    return [
+                                                        Forms\Components\Placeholder::make('no_attributes')
+                                                            ->content('Select a category to view its specific attributes')
+                                                    ];
+                                                }
+                                                
+                                                // Get category attribute definitions
+                                                $categoryAttributes = \App\Models\SpotlightCategoryAttribute::where('category_id', $categoryId)
+                                                    ->with('attributeDefinition.options')
+                                                    ->get();
+                                                    
+                                                if ($categoryAttributes->isEmpty()) {
+                                                    return [
+                                                        Forms\Components\Placeholder::make('no_attributes')
+                                                            ->content('This category has no specific attributes')
+                                                    ];
+                                                }
+                                                
+                                                $attributeFields = [];
+                                                
+                                                // Get existing attribute values if we're editing a record
+                                                $existingValues = [];
+                                                $record = $livewire->record;
+                                                
+                                                if ($record) {
+                                                    $attributesByDef = $record->getAttributesByDefinition();
+                                                }
+                                                
+                                                foreach ($categoryAttributes as $categoryAttribute) {
+                                                    $definition = $categoryAttribute->attributeDefinition;
+                                                    if (!$definition) continue;
+                                                    
+                                                    $fieldType = $definition->getFormFieldType();
+                                                    $isRequired = $categoryAttribute->is_required;
+                                                    
+                                                    $fieldName = "attributes.{$definition->id}";
+                                                    
+                                                    // Get current value if editing and value exists
+                                                    $currentValue = null;
+                                                    $currentOptionId = null;
+                                                    $currentOptionIds = [];
+                                                    
+                                                    if ($record && isset($attributesByDef[$definition->id]) && !empty($attributesByDef[$definition->id]['values'])) {
+                                                        $values = $attributesByDef[$definition->id]['values'];
+                                                        
+                                                        if ($fieldType === 'select' && isset($values[0]->option_id)) {
+                                                            $currentOptionId = $values[0]->option_id;
+                                                        } elseif ($fieldType === 'multiselect') {
+                                                            foreach ($values as $value) {
+                                                                if (isset($value->option_id)) {
+                                                                    $currentOptionIds[] = $value->option_id;
+                                                                }
+                                                            }
+                                                        } elseif (isset($values[0]->value)) {
+                                                            $currentValue = $values[0]->value;
+                                                            
+                                                            // Convert boolean string to actual boolean
+                                                            if ($fieldType === 'boolean' || $fieldType === 'toggle') {
+                                                                $currentValue = filter_var($currentValue, FILTER_VALIDATE_BOOLEAN);
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    // Create appropriate field type based on definition
+                                                    switch($fieldType) {
+                                                        case 'text':
+                                                            $attributeFields[] = Forms\Components\TextInput::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired)
+                                                                ->default($currentValue);
+                                                            break;
+                                                            
+                                                        case 'textarea':
+                                                            $attributeFields[] = Forms\Components\Textarea::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNull('attribute_option_id')
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue) {
+                                                                            $component->state($attributeValue->value);
+                                                                        }
+                                                                    }
+                                                                });
+                                                            break;
+                                                            
+                                                        case 'number':
+                                                            $attributeFields[] = Forms\Components\TextInput::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->numeric()
+                                                                ->required($isRequired)
+                                                                ->default($currentValue);
+                                                            break;
+                                                            
+                                                        case 'boolean':
+                                                        case 'toggle':
+                                                            $attributeFields[] = Forms\Components\Toggle::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNull('attribute_option_id')
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue) {
+                                                                            // Convert string 'true'/'false' to boolean if needed
+                                                                            $value = $attributeValue->value;
+                                                                            if (is_string($value)) {
+                                                                                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+                                                                            }
+                                                                            $component->state($value);
+                                                                        }
+                                                                    }
+                                                                });
+                                                            break;
+                                                            
+                                                        case 'select':
+                                                            $options = $definition->options->pluck('display_label', 'id')->toArray();
+                                                            
+                                                            // Debug to verify option values
+                                                            \Illuminate\Support\Facades\Log::debug('Select field options', [
+                                                                'definition' => $definition->name,
+                                                                'options' => $options,
+                                                                'currentOptionId' => $currentOptionId,
+                                                                'values' => $record ? ($attributesByDef[$definition->id]['values'] ?? []) : []
+                                                            ]);
+                                                            
+                                                            $attributeFields[] = Forms\Components\Select::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->options($options)
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue && $attributeValue->attribute_option_id) {
+                                                                            $component->state($attributeValue->attribute_option_id);
+                                                                        }
+                                                                    }
+                                                                });
+                                                            break;
+                                                            
+                                                        case 'multiselect':
+                                                            $options = $definition->options->pluck('display_label', 'id')->toArray();
+                                                            $attributeFields[] = Forms\Components\Select::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->options($options)
+                                                                ->multiple()
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValues = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNotNull('attribute_option_id')
+                                                                            ->pluck('attribute_option_id')
+                                                                            ->toArray();
+                                                                            
+                                                                        if (!empty($attributeValues)) {
+                                                                            $component->state($attributeValues);
+                                                                        }
+                                                                    }
+                                                                });
+                                                            break;
+                                                            
+                                                        case 'date':
+                                                            $attributeFields[] = Forms\Components\DatePicker::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNull('attribute_option_id')
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue && $attributeValue->value) {
+                                                                            $component->state($attributeValue->value);
+                                                                        }
+                                                                    }
+                                                                });
+                                                            break;
+                                                            
+                                                        case 'time':
+                                                            $attributeFields[] = Forms\Components\TimePicker::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNull('attribute_option_id')
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue && $attributeValue->value) {
+                                                                            $component->state($attributeValue->value);
+                                                                        }
+                                                                    }
+                                                                });
+                                                            break;
+                                                            
+                                                        case 'datetime':
+                                                            $attributeFields[] = Forms\Components\DateTimePicker::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNull('attribute_option_id')
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue && $attributeValue->value) {
+                                                                            $component->state($attributeValue->value);
+                                                                        }
+                                                                    }
+                                                                });
+                                                            break;
+                                                            
+                                                        default:
+                                                            $attributeFields[] = Forms\Components\TextInput::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired)
+                                                                ->afterStateHydrated(function ($component, $state) use ($record, $definition) {
+                                                                    if ($record) {
+                                                                        $attributeValue = $record->attributeValues()
+                                                                            ->where('attribute_definition_id', $definition->id)
+                                                                            ->whereNull('attribute_option_id')
+                                                                            ->first();
+                                                                            
+                                                                        if ($attributeValue) {
+                                                                            $component->state($attributeValue->value);
+                                                                        }
+                                                                    }
+                                                                });
+                                                            break;
+                                                    }
+                                                }
+                                                
+                                                return $attributeFields;
+                                            })
+                                            ->columns(2)
+                                            ->visible(fn (Forms\Get $get) => !empty($get('category_id'))),
                                             
                                         Forms\Components\Select::make('location_id')
                                             ->relationship('location', 'name')
                                             ->required()
                                             ->searchable()
                                             ->preload()
-                                            ->createOptionForm([
-                                                Forms\Components\TextInput::make('name')
-                                                    ->required()
-                                                    ->maxLength(255),
-                                                Forms\Components\TextInput::make('address_line_1')
-                                                    ->required()
-                                                    ->maxLength(255),
-                                                Forms\Components\TextInput::make('city')
-                                                    ->required()
-                                                    ->maxLength(100),
-                                                Forms\Components\TextInput::make('country')
-                                                    ->required()
-                                                    ->default('Lebanon')
-                                                    ->maxLength(100),
-                                            ]),
+                                            ->helperText('Select from existing locations. New locations must be created in the Locations section.'),
                                             
                                         Forms\Components\Select::make('user_id')
                                             ->relationship('user', 'name')
@@ -177,15 +416,85 @@ class SpotlightResource extends Resource
                                     
                                 Forms\Components\Section::make('Social Media')
                                     ->schema([
-                                        Forms\Components\KeyValue::make('social_media')
-                                            ->keyLabel('Platform')
-                                            ->valueLabel('URL')
+                                        Forms\Components\Toggle::make('has_social_media')
+                                            ->label('Add Social Media Links')
+                                            ->helperText('Enable to add social media profiles')
+                                            ->default(false)
+                                            ->live(),
+                                            
+                                        Forms\Components\Repeater::make('social_media')
+                                            ->schema([
+                                                Forms\Components\Grid::make()
+                                                    ->schema([
+                                                        Forms\Components\Select::make('platform')
+                                                            ->label('Platform')
+                                                            ->options([
+                                                                'instagram' => 'Instagram',
+                                                                'facebook' => 'Facebook',
+                                                                'twitter' => 'Twitter',
+                                                                'youtube' => 'YouTube',
+                                                                'tiktok' => 'TikTok',
+                                                                'linkedin' => 'LinkedIn',
+                                                                'pinterest' => 'Pinterest',
+                                                                'other' => 'Other',
+                                                            ])
+                                                            ->required()
+                                                            ->live()
+                                                            ->columnSpan(1)
+                                                            ->afterStateUpdated(function ($state, callable $set) {
+                                                                if ($state) {
+                                                                    // Set base URL prefix based on platform
+                                                                    $urlPrefix = match($state) {
+                                                                        'instagram' => 'https://instagram.com/',
+                                                                        'facebook' => 'https://facebook.com/',
+                                                                        'twitter' => 'https://twitter.com/',
+                                                                        'youtube' => 'https://youtube.com/',
+                                                                        'tiktok' => 'https://tiktok.com/@',
+                                                                        'linkedin' => 'https://linkedin.com/in/',
+                                                                        'pinterest' => 'https://pinterest.com/',
+                                                                        default => ''
+                                                                    };
+                                                                    $set('url_prefix', $urlPrefix);
+                                                                }
+                                                            }),
+                                                            
+                                                        Forms\Components\TextInput::make('url')
+                                                            ->label('URL or Username')
+                                                            ->required()
+                                                            ->prefix(fn (Forms\Get $get) => $get('url_prefix'))
+                                                            ->columnSpan(2)
+                                                            ->helperText(fn (Forms\Get $get) => $get('platform') !== 'other' ? 'Enter username only for ' . $get('platform') : 'Enter full URL including https://'),
+                                                    ])
+                                                    ->columns(3),
+                                                    
+                                                Forms\Components\Hidden::make('url_prefix'),
+                                                
+                                                Forms\Components\TextInput::make('platform_name')
+                                                    ->label('Platform Name')
+                                                    ->required()
+                                                    ->visible(fn (Forms\Get $get) => $get('platform') === 'other'),
+                                            ])
+                                            ->itemLabel(fn (array $state): ?string => 
+                                                $state['platform'] ? 
+                                                    ($state['platform'] === 'other' ? 
+                                                        ($state['platform_name'] ?? 'Other Platform') : 
+                                                        ucfirst($state['platform'])
+                                                    ) : null
+                                            )
+                                            ->visible(fn (Forms\Get $get) => $get('has_social_media'))
+                                            ->defaultItems(0)
                                             ->reorderable()
                                             ->columnSpanFull(),
                                     ]),
                                     
                                 Forms\Components\Section::make('Opening Hours')
                                     ->schema([
+                                        Forms\Components\Toggle::make('has_opening_hours')
+                                            ->label('Add Opening Hours')
+                                            ->helperText('Enable to add operating hours information')
+                                            ->default(false)
+                                            ->live(),
+                                            
                                         Forms\Components\Repeater::make('opening_hours')
                                             ->schema([
                                                 Forms\Components\Select::make('day')
@@ -213,7 +522,9 @@ class SpotlightResource extends Resource
                                                     ->default(false),
                                             ])
                                             ->columns(4)
-                                            ->columnSpanFull(),
+                                            ->columnSpanFull()
+                                            ->visible(fn (Forms\Get $get) => $get('has_opening_hours'))
+                                            ->defaultItems(0),
                                     ]),
                             ]),
                             
@@ -276,44 +587,26 @@ class SpotlightResource extends Resource
                                 Forms\Components\Section::make('Tags')
                                     ->schema([
                                         Forms\Components\Select::make('tags')
-                                            ->relationship('tags', 'name')
+                                            ->relationship('tags', 'name', function (Builder $query, callable $get) {
+                                                $categoryId = $get('category_id');
+                                                
+                                                if ($categoryId) {
+                                                    // Filter tags by the selected category
+                                                    return $query->where('category_id', $categoryId);
+                                                }
+                                                
+                                                // If no category is selected, show all tags
+                                                return $query;
+                                            })
                                             ->multiple()
                                             ->preload()
                                             ->searchable()
-                                            ->createOptionForm([
-                                                Forms\Components\TextInput::make('name')
-                                                    ->required()
-                                                    ->maxLength(255)
-                                                    ->live(onBlur: true)
-                                                    ->afterStateUpdated(fn ($state, Forms\Set $set) => 
-                                                        $set('slug', Str::slug($state))
-                                                    ),
-                                                Forms\Components\TextInput::make('slug')
-                                                    ->required()
-                                                    ->maxLength(255)
-                                                    ->rules(['alpha_dash']),
-                                                Forms\Components\Select::make('type')
-                                                    ->options([
-                                                        'general' => 'General',
-                                                        'amenity' => 'Amenity',
-                                                        'cuisine' => 'Cuisine',
-                                                        'feature' => 'Feature',
-                                                        'style' => 'Style',
-                                                        'season' => 'Season',
-                                                    ])
-                                                    ->required()
-                                                    ->default('general'),
-                                            ]),
+                                            ->helperText('Tags are filtered based on the selected category. New tags must be created in the Tags section.')
+                                            ->live(),
                                     ]),
                             ]),
                             
-                        Forms\Components\Tabs\Tab::make('Custom Attributes')
-                            ->schema([
-                                // This will be dynamically populated based on the selected category
-                                Forms\Components\Placeholder::make('attributes_note')
-                                    ->label('Category-specific Attributes')
-                                    ->content('Select a category first, then save to edit attributes.'),
-                            ]),
+                        // We've moved Custom Attributes section directly under category selection
                     ])
                     ->columnSpanFull(),
             ]);
@@ -454,7 +747,7 @@ class SpotlightResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\AttributeValuesRelationManager::class,
+            // Removed AttributeValuesRelationManager as we now handle attributes directly in the form
             RelationManagers\MediaRelationManager::class,
         ];
     }

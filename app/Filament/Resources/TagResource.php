@@ -43,24 +43,22 @@ class TagResource extends Resource
                             ->rules(['alpha_dash'])
                             ->helperText('Auto-generated from name if left empty.'),
                             
-                        Forms\Components\Select::make('type')
-                            ->options([
-                                'general' => 'General',
-                                'amenity' => 'Amenity',
-                                'cuisine' => 'Cuisine',
-                                'feature' => 'Feature',
-                                'style' => 'Style',
-                                'season' => 'Season',
-                            ])
-                            ->required()
+                        Forms\Components\Hidden::make('type')
                             ->default('general'),
                             
-                        Forms\Components\ColorPicker::make('color')
-                            ->rgba(),
+                        Forms\Components\Hidden::make('color')
+                            ->default('#ffffff'),
                             
                         Forms\Components\TextInput::make('display_order')
                             ->numeric()
                             ->default(0),
+                            
+                        Forms\Components\Select::make('category_id')
+                            ->relationship('category', 'name')
+                            ->label('Category')
+                            ->preload()
+                            ->searchable()
+                            ->helperText('Assign this tag to a specific category to filter tags on the spotlight form.'),
                     ]),
             ]);
     }
@@ -81,6 +79,10 @@ class TagResource extends Resource
                     ->badge()
                     ->sortable()
                     ->formatStateUsing(fn (string $state) => Str::title($state)),
+                    
+                Tables\Columns\TextColumn::make('category.name')
+                    ->label('Category')
+                    ->sortable(),
                     
                 Tables\Columns\ColorColumn::make('color')
                     ->toggleable(),

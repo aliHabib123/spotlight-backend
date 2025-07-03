@@ -600,16 +600,21 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Parameters:**
 - `per_page` (optional): Number of items per page (default: 15)
 - `page` (optional): Page number (default: 1)
-
-**Response:**
+- `category_id` (optional): Filter tags by category ID
+- `type` (optional): Filter tags by type (general, amenity, cuisine, etc.)
 ```json
 {
   "data": [
-    {
-      "id": 1,
-      "name": "Family Friendly",
-      "slug": "family-friendly",
-      "description": null
+ {
+        "id": 1,
+        "name": "Breakfast",
+        "slug": "breakfast",
+        "type": "general",
+        "color": null,
+        "display_order": 0,
+        "created_at": "2025-06-14T17:46:53.000000Z",
+        "updated_at": "2025-07-03T14:38:17.000000Z",
+        "category_id": 1
     },
     ...
   ],
