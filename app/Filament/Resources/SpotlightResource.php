@@ -471,30 +471,7 @@ class SpotlightResource extends Resource
                                             ->multiple()
                                             ->preload()
                                             ->searchable()
-                                            ->createOptionForm([
-                                                Forms\Components\TextInput::make('name')
-                                                    ->required()
-                                                    ->maxLength(255)
-                                                    ->live(onBlur: true)
-                                                    ->afterStateUpdated(fn ($state, Forms\Set $set) => 
-                                                        $set('slug', Str::slug($state))
-                                                    ),
-                                                Forms\Components\TextInput::make('slug')
-                                                    ->required()
-                                                    ->maxLength(255)
-                                                    ->rules(['alpha_dash']),
-                                                Forms\Components\Select::make('type')
-                                                    ->options([
-                                                        'general' => 'General',
-                                                        'amenity' => 'Amenity',
-                                                        'cuisine' => 'Cuisine',
-                                                        'feature' => 'Feature',
-                                                        'style' => 'Style',
-                                                        'season' => 'Season',
-                                                    ])
-                                                    ->required()
-                                                    ->default('general'),
-                                            ]),
+                                            ->helperText('Select from existing tags. New tags must be created in the Tags section.'),
                                     ]),
                             ]),
                             
