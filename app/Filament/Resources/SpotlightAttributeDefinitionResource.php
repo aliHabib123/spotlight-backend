@@ -10,10 +10,27 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class SpotlightAttributeDefinitionResource extends Resource
 {
     protected static ?string $model = SpotlightAttributeDefinition::class;
+
+    public static function canAccess(): bool
+    {
+        // Only super-admin users can manage attribute definitions
+        if (!Auth::check()) {
+            return false;
+        }
+        
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        
+        // Check if the user has the super-admin role
+        return $user->hasRole('super-admin');
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-plus';
     

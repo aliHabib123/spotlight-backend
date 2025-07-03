@@ -4,27 +4,39 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\FeatureFlagResource\Pages;
 use App\Models\FeatureFlag;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class FeatureFlagResource extends Resource
 {
     protected static ?string $model = FeatureFlag::class;
 
+
+
     protected static ?string $navigationIcon = 'heroicon-o-flag';
-    
+
     protected static ?string $navigationGroup = 'System';
-    
+
     protected static ?int $navigationSort = 10;
-    
+
     public static function canAccess(): bool
     {
-        return auth()->user()->hasRole('super admin') || 
-               auth()->user()->hasRole('admin') || 
-               auth()->user()->can('manage feature-flags');
+        if (!Auth::check()) {
+            return false;
+        }
+
+        /** @var User $user */
+        $user = Auth::user();
+
+        // Check if the user has the super-admin role
+        return $user->hasRole('super-admin');
     }
 
     public static function form(Form $form): Form
@@ -34,23 +46,23 @@ class FeatureFlagResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
-                    
+
                 Forms\Components\TextInput::make('key')
                     ->required()
                     ->maxLength(255)
                     ->unique(FeatureFlag::class, 'key', ignoreRecord: true)
                     ->rules(['alpha_dash'])
                     ->helperText('This is used as a reference in the code.'),
-                    
+
                 Forms\Components\Toggle::make('is_enabled')
                     ->label('Enabled')
                     ->default(false)
                     ->helperText('Feature is active when enabled.'),
-                    
+
                 Forms\Components\Textarea::make('description')
                     ->maxLength(1000)
                     ->columnSpanFull(),
-                    
+
                 Forms\Components\KeyValue::make('config')
                     ->keyLabel('Setting')
                     ->valueLabel('Value')
@@ -66,26 +78,26 @@ class FeatureFlagResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('key')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\IconColumn::make('is_enabled')
                     ->label('Enabled')
                     ->boolean()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('description')
                     ->limit(50)
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

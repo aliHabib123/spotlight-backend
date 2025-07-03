@@ -12,10 +12,25 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class HomeScreenLocationResource extends Resource
 {
     protected static ?string $model = HomeScreenLocation::class;
+
+    public static function canAccess(): bool
+    {
+        // Only super-admin users can manage home screen locations
+        if (!Auth::check()) {
+            return false;
+        }
+        
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        
+        // Check if the user has the super-admin role
+        return $user->hasRole('super-admin');
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-home';
     
