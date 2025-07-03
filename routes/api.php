@@ -48,6 +48,8 @@ Route::prefix('v1/auth')->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::post('refresh', [AuthController::class, 'refresh']);
         Route::get('me', [AuthController::class, 'me']);
+        Route::put('update-profile', [AuthController::class, 'updateProfile']);
+        Route::delete('delete-account', [AuthController::class, 'deleteAccount']);
     });
 });
 

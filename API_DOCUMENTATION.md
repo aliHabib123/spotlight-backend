@@ -113,6 +113,77 @@ Authorization: Bearer YOUR_JWT_TOKEN
 }
 ```
 
+### Update User Profile
+
+**Endpoint:** `PUT /api/v1/auth/update-profile`
+
+**Description:** Updates the authenticated user's profile information. Uses the same fields as registration, with password being optional.
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Request:**
+```json
+{
+  "name": "John Smith",
+  "email": "johnsmith@example.com",
+  "password": "new_password",
+  "password_confirmation": "new_password",
+  "mobile": "+9715123456789",
+  "address": "123 Main Street, Dubai, UAE"
+}
+```
+
+**Notes:**
+- `password` and `password_confirmation` are optional. If not provided, the password will remain unchanged.
+- `mobile` and `address` are optional fields.
+- Email must be unique, except for the current user's email.
+
+**Successful Response (200 OK):**
+```json
+{
+  "message": "Profile updated successfully",
+  "user": {
+    "id": 1,
+    "name": "John Smith",
+    "email": "johnsmith@example.com",
+    "mobile": "+9715123456789",
+    "address": "123 Main Street, Dubai, UAE",
+    "created_at": "2023-06-15T12:34:56.000000Z",
+    "updated_at": "2023-07-01T22:12:45.000000Z"
+  },
+  "roles": ["app user"],
+  "permissions": ["view spotlights", "create comments"]
+}
+```
+
+**Error Responses:**
+
+*Validation error (400 Bad Request):*
+```json
+{
+  "name": ["The name field is required."],
+  "email": ["The email has already been taken."]
+}
+```
+
+*Unauthorized (401 Unauthorized):*
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+*Server error (500 Internal Server Error):*
+```json
+{
+  "error": "Failed to update profile",
+  "message": "Error details..."
+}
+```
+
 ### Refresh Token
 
 **Endpoint:** `POST /api/v1/auth/refresh`
@@ -147,6 +218,62 @@ Authorization: Bearer YOUR_JWT_TOKEN
 ```json
 {
   "message": "Successfully logged out"
+}
+```
+
+### Delete Account
+
+**Endpoint:** `DELETE /api/v1/auth/delete-account`
+
+**Description:** Permanently deletes the authenticated user's account. This action cannot be undone. For security reasons, the user must confirm their password.  
+
+**Headers:**
+```
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+**Request:**
+```json
+{
+  "password": "current_password"
+}
+```
+
+**Successful Response (200 OK):**
+```json
+{
+  "message": "Account successfully deleted"
+}
+```
+
+**Error Responses:**
+
+*Password not provided (422 Unprocessable Entity):*
+```json
+{
+  "password": ["The password field is required."]
+}
+```
+
+*Incorrect password (422 Unprocessable Entity):*
+```json
+{
+  "error": "Current password is incorrect"
+}
+```
+
+*Unauthorized (401 Unauthorized):*
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+*Server error (500 Internal Server Error):*
+```json
+{
+  "error": "Failed to delete account",
+  "message": "Error details..."
 }
 ```
 

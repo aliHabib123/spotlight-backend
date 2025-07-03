@@ -41,7 +41,8 @@ class AuthController extends Controller
 
         $credentials = $request->only('email', 'password');
 
-        if (!$token = auth('api')->attempt($credentials)) {
+        $token = auth('api')->attempt($credentials);
+        if (!$token) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -171,5 +172,107 @@ class AuthController extends Controller
         }
         
         return response()->json($response, $statusCode);
+    }
+    
+    /**
+     * Update the authenticated user's profile.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        // Get the authenticated user
+        $user = auth('api')->user();
+        
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|between:2,100',
+            'email' => 'required|string|email|max:100|unique:users,email,'.$user->id,
+            'password' => 'nullable|string|confirmed|min:6',
+            'mobile' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+        
+        $updateData = [
+            'name' => $request->name,
+            'email' => $request->email,
+            'mobile' => $request->mobile,
+            'address' => $request->address,
+        ];
+        
+        // Only update password if provided
+        if ($request->filled('password')) {
+            $updateData['password'] = Hash::make($request->password);
+        }
+        
+        try {
+            User::where('id', $user->id)->update($updateData);
+            
+            // Get the refreshed user data
+            $updatedUser = User::find($user->id);
+            
+            // Get user roles and permissions
+            $roles = method_exists($updatedUser, 'getRoleNames') ? $updatedUser->getRoleNames() : [];
+            $permissions = method_exists($updatedUser, 'getAllPermissions') ? $updatedUser->getAllPermissions()->pluck('name') : [];
+            
+            return response()->json([
+                'message' => 'Profile updated successfully',
+                'user' => $updatedUser,
+                'roles' => $roles,
+                'permissions' => $permissions
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to update profile', 'message' => $e->getMessage()], 500);
+        }
+    }
+    
+    /**
+     * Delete the authenticated user's account.
+     *
+     * @param  Request  $request
+     * @return JsonResponse
+     */
+    public function deleteAccount(Request $request): JsonResponse
+    {
+        // Get the authenticated user
+        $user = auth('api')->user();
+        
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        
+        // Verify password to confirm deletion request
+        $validator = Validator::make($request->all(), [
+            'password' => 'required|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+        
+        // Check if the provided password matches
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json(['error' => 'Current password is incorrect'], 422);
+        }
+        
+        try {
+            // Log the user out by invalidating their token
+            auth('api')->logout();
+            
+            // Delete the user account
+            User::where('id', $user->id)->delete();
+            
+            return response()->json(['message' => 'Account successfully deleted'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to delete account', 'message' => $e->getMessage()], 500);
+        }
     }
 }
