@@ -296,9 +296,73 @@ class SpotlightResource extends Resource
                                     
                                 Forms\Components\Section::make('Social Media')
                                     ->schema([
-                                        Forms\Components\KeyValue::make('social_media')
-                                            ->keyLabel('Platform')
-                                            ->valueLabel('URL')
+                                        Forms\Components\Toggle::make('has_social_media')
+                                            ->label('Add Social Media Links')
+                                            ->helperText('Enable to add social media profiles')
+                                            ->default(false)
+                                            ->live(),
+                                            
+                                        Forms\Components\Repeater::make('social_media')
+                                            ->schema([
+                                                Forms\Components\Grid::make()
+                                                    ->schema([
+                                                        Forms\Components\Select::make('platform')
+                                                            ->label('Platform')
+                                                            ->options([
+                                                                'instagram' => 'Instagram',
+                                                                'facebook' => 'Facebook',
+                                                                'twitter' => 'Twitter',
+                                                                'youtube' => 'YouTube',
+                                                                'tiktok' => 'TikTok',
+                                                                'linkedin' => 'LinkedIn',
+                                                                'pinterest' => 'Pinterest',
+                                                                'other' => 'Other',
+                                                            ])
+                                                            ->required()
+                                                            ->live()
+                                                            ->columnSpan(1)
+                                                            ->afterStateUpdated(function ($state, callable $set) {
+                                                                if ($state) {
+                                                                    // Set base URL prefix based on platform
+                                                                    $urlPrefix = match($state) {
+                                                                        'instagram' => 'https://instagram.com/',
+                                                                        'facebook' => 'https://facebook.com/',
+                                                                        'twitter' => 'https://twitter.com/',
+                                                                        'youtube' => 'https://youtube.com/',
+                                                                        'tiktok' => 'https://tiktok.com/@',
+                                                                        'linkedin' => 'https://linkedin.com/in/',
+                                                                        'pinterest' => 'https://pinterest.com/',
+                                                                        default => ''
+                                                                    };
+                                                                    $set('url_prefix', $urlPrefix);
+                                                                }
+                                                            }),
+                                                            
+                                                        Forms\Components\TextInput::make('url')
+                                                            ->label('URL or Username')
+                                                            ->required()
+                                                            ->prefix(fn (Forms\Get $get) => $get('url_prefix'))
+                                                            ->columnSpan(2)
+                                                            ->helperText(fn (Forms\Get $get) => $get('platform') !== 'other' ? 'Enter username only for ' . $get('platform') : 'Enter full URL including https://'),
+                                                    ])
+                                                    ->columns(3),
+                                                    
+                                                Forms\Components\Hidden::make('url_prefix'),
+                                                
+                                                Forms\Components\TextInput::make('platform_name')
+                                                    ->label('Platform Name')
+                                                    ->required()
+                                                    ->visible(fn (Forms\Get $get) => $get('platform') === 'other'),
+                                            ])
+                                            ->itemLabel(fn (array $state): ?string => 
+                                                $state['platform'] ? 
+                                                    ($state['platform'] === 'other' ? 
+                                                        ($state['platform_name'] ?? 'Other Platform') : 
+                                                        ucfirst($state['platform'])
+                                                    ) : null
+                                            )
+                                            ->visible(fn (Forms\Get $get) => $get('has_social_media'))
+                                            ->defaultItems(0)
                                             ->reorderable()
                                             ->columnSpanFull(),
                                     ]),
