@@ -18,7 +18,7 @@ class TagController extends Controller
      */
     public function index(Request $request)
     {
-        $cacheKey = 'tags_' . $request->input('type', 'all');
+        $cacheKey = 'tags_' . $request->input('type', 'all') . '_category_' . $request->input('category_id', 'all');
         
         return Cache::remember($cacheKey, 3600, function() use ($request) {
             $query = Tag::query();
@@ -26,6 +26,11 @@ class TagController extends Controller
             // Filter by type if specified
             if ($request->has('type') && $request->type != 'all') {
                 $query->where('type', $request->type);
+            }
+            
+            // Filter by category_id if specified
+            if ($request->has('category_id') && $request->category_id != 'all') {
+                $query->where('category_id', $request->category_id);
             }
             
             // Include spotlight counts if requested

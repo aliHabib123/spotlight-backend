@@ -587,11 +587,22 @@ class SpotlightResource extends Resource
                                 Forms\Components\Section::make('Tags')
                                     ->schema([
                                         Forms\Components\Select::make('tags')
-                                            ->relationship('tags', 'name')
+                                            ->relationship('tags', 'name', function (Builder $query, callable $get) {
+                                                $categoryId = $get('category_id');
+                                                
+                                                if ($categoryId) {
+                                                    // Filter tags by the selected category
+                                                    return $query->where('category_id', $categoryId);
+                                                }
+                                                
+                                                // If no category is selected, show all tags
+                                                return $query;
+                                            })
                                             ->multiple()
                                             ->preload()
                                             ->searchable()
-                                            ->helperText('Select from existing tags. New tags must be created in the Tags section.'),
+                                            ->helperText('Tags are filtered based on the selected category. New tags must be created in the Tags section.')
+                                            ->live(),
                                     ]),
                             ]),
                             
