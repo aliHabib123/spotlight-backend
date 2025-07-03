@@ -6,6 +6,7 @@ use App\Filament\Resources\SpotlightResource\Pages;
 use App\Filament\Resources\SpotlightResource\RelationManagers;
 use App\Models\Spotlight;
 use App\Models\SpotlightCategory;
+use App\Models\SpotlightCategoryAttribute;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -55,6 +56,7 @@ class SpotlightResource extends Resource
                                             ->required()
                                             ->searchable()
                                             ->preload()
+                                            ->live()
                                             ->createOptionForm([
                                                 Forms\Components\TextInput::make('name')
                                                     ->required()
@@ -70,6 +72,123 @@ class SpotlightResource extends Resource
                                                 Forms\Components\Toggle::make('is_active')
                                                     ->default(true),
                                             ]),
+                                            
+                                        Forms\Components\Section::make('Category Attributes')
+                                            ->schema(function (Forms\Get $get) {
+                                                $categoryId = $get('category_id');
+                                                if (empty($categoryId)) {
+                                                    return [
+                                                        Forms\Components\Placeholder::make('no_attributes')
+                                                            ->content('Select a category to view its specific attributes')
+                                                    ];
+                                                }
+                                                
+                                                // Get category attribute definitions
+                                                $categoryAttributes = \App\Models\SpotlightCategoryAttribute::where('category_id', $categoryId)
+                                                    ->with('attributeDefinition.options')
+                                                    ->get();
+                                                    
+                                                if ($categoryAttributes->isEmpty()) {
+                                                    return [
+                                                        Forms\Components\Placeholder::make('no_attributes')
+                                                            ->content('This category has no specific attributes')
+                                                    ];
+                                                }
+                                                
+                                                $attributeFields = [];
+                                                foreach ($categoryAttributes as $categoryAttribute) {
+                                                    $definition = $categoryAttribute->attributeDefinition;
+                                                    if (!$definition) continue;
+                                                    
+                                                    $fieldType = $definition->getFormFieldType();
+                                                    $isRequired = $categoryAttribute->is_required;
+                                                    
+                                                    $fieldName = "attributes.{$definition->id}";
+                                                    
+                                                    // Create appropriate field type based on definition
+                                                    switch($fieldType) {
+                                                        case 'text':
+                                                            $attributeFields[] = Forms\Components\TextInput::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired);
+                                                            break;
+                                                            
+                                                        case 'textarea':
+                                                            $attributeFields[] = Forms\Components\Textarea::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired);
+                                                            break;
+                                                            
+                                                        case 'number':
+                                                            $attributeFields[] = Forms\Components\TextInput::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->numeric()
+                                                                ->required($isRequired);
+                                                            break;
+                                                            
+                                                        case 'boolean':
+                                                        case 'toggle':
+                                                            $attributeFields[] = Forms\Components\Toggle::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired);
+                                                            break;
+                                                            
+                                                        case 'select':
+                                                            $options = $definition->options->pluck('display_label', 'id')->toArray();
+                                                            $attributeFields[] = Forms\Components\Select::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->options($options)
+                                                                ->required($isRequired);
+                                                            break;
+                                                            
+                                                        case 'multiselect':
+                                                            $options = $definition->options->pluck('display_label', 'id')->toArray();
+                                                            $attributeFields[] = Forms\Components\Select::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->options($options)
+                                                                ->multiple()
+                                                                ->required($isRequired);
+                                                            break;
+                                                            
+                                                        case 'date':
+                                                            $attributeFields[] = Forms\Components\DatePicker::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired);
+                                                            break;
+                                                            
+                                                        case 'time':
+                                                            $attributeFields[] = Forms\Components\TimePicker::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired);
+                                                            break;
+                                                            
+                                                        case 'datetime':
+                                                            $attributeFields[] = Forms\Components\DateTimePicker::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired);
+                                                            break;
+                                                        
+                                                        default:
+                                                            $attributeFields[] = Forms\Components\TextInput::make($fieldName)
+                                                                ->label($definition->name)
+                                                                ->helperText($definition->description)
+                                                                ->required($isRequired);
+                                                    }
+                                                }
+                                                
+                                                return $attributeFields;
+                                            })
+                                            ->columns(2)
+                                            ->visible(fn (Forms\Get $get) => !empty($get('category_id'))),
                                             
                                         Forms\Components\Select::make('location_id')
                                             ->relationship('location', 'name')
@@ -307,13 +426,7 @@ class SpotlightResource extends Resource
                                     ]),
                             ]),
                             
-                        Forms\Components\Tabs\Tab::make('Custom Attributes')
-                            ->schema([
-                                // This will be dynamically populated based on the selected category
-                                Forms\Components\Placeholder::make('attributes_note')
-                                    ->label('Category-specific Attributes')
-                                    ->content('Select a category first, then save to edit attributes.'),
-                            ]),
+                        // We've moved Custom Attributes section directly under category selection
                     ])
                     ->columnSpanFull(),
             ]);
