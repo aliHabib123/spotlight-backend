@@ -305,6 +305,12 @@ class SpotlightResource extends Resource
                                     
                                 Forms\Components\Section::make('Opening Hours')
                                     ->schema([
+                                        Forms\Components\Toggle::make('has_opening_hours')
+                                            ->label('Add Opening Hours')
+                                            ->helperText('Enable to add operating hours information')
+                                            ->default(false)
+                                            ->live(),
+                                            
                                         Forms\Components\Repeater::make('opening_hours')
                                             ->schema([
                                                 Forms\Components\Select::make('day')
@@ -332,7 +338,9 @@ class SpotlightResource extends Resource
                                                     ->default(false),
                                             ])
                                             ->columns(4)
-                                            ->columnSpanFull(),
+                                            ->columnSpanFull()
+                                            ->visible(fn (Forms\Get $get) => $get('has_opening_hours'))
+                                            ->defaultItems(0),
                                     ]),
                             ]),
                             
