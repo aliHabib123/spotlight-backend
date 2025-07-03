@@ -1,9 +1,9 @@
-name: Deploy Spotlight Backend to Hostgator
+name: Deploy Laravel App via SSH
 
 on:
   push:
     branches:
-      - release  # Change this to your main branch if needed
+      - release
 
 jobs:
   deploy:
@@ -16,40 +16,31 @@ jobs:
     - name: Setup SSH key
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa_deploy
-        chmod 600 ~/.ssh/id_rsa_deploy
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa_github
+        chmod 600 ~/.ssh/id_rsa_github
         ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
 
     - name: Deploy over SSH
       run: |
         ssh -i ~/.ssh/id_rsa_deploy ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           cd ${{ secrets.TARGET_DIR }}
-          
           # Stash any local changes to prevent conflicts
           git stash
-          
           # Fetch latest changes
           git fetch origin release
-          
           # Reset to the latest commit on the release branch
           git reset --hard origin/release
-          
+          # Clean up any untracked files (optional, be careful with this)
+          # git clean -fd
           # Install dependencies
           composer install --no-dev --optimize-autoloader
-          
-          # Laravel deployment commands
+          # Publish vendor assets (config, migrations, assets) for all packages
+          # php artisan vendor:publish --all --force
           php artisan migrate --force
           php artisan config:clear
           php artisan config:cache
-          php artisan route:clear
           php artisan route:cache
           php artisan view:clear
           php artisan view:cache
-          
-          # Set proper permissions
           chmod -R 775 storage bootstrap/cache
-          
-          # Clear any application caches
-          php artisan optimize:clear
-          php artisan optimize
         EOF
