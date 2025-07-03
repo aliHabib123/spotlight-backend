@@ -43,20 +43,11 @@ class TagResource extends Resource
                             ->rules(['alpha_dash'])
                             ->helperText('Auto-generated from name if left empty.'),
                             
-                        Forms\Components\Select::make('type')
-                            ->options([
-                                'general' => 'General',
-                                'amenity' => 'Amenity',
-                                'cuisine' => 'Cuisine',
-                                'feature' => 'Feature',
-                                'style' => 'Style',
-                                'season' => 'Season',
-                            ])
-                            ->required()
+                        Forms\Components\Hidden::make('type')
                             ->default('general'),
                             
-                        Forms\Components\ColorPicker::make('color')
-                            ->rgba(),
+                        Forms\Components\Hidden::make('color')
+                            ->default('#ffffff'),
                             
                         Forms\Components\TextInput::make('display_order')
                             ->numeric()
