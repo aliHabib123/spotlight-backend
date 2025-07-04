@@ -117,9 +117,9 @@ class TagResource extends Resource
                 //         'season' => 'Season',
                 //     ]),
                 Tables\Filters\SelectFilter::make('category')
-    ->relationship('category', 'name')
-    ->preload()
-    ->searchable(),
+                    ->relationship('category', 'name')
+                    ->preload()
+                    ->searchable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
