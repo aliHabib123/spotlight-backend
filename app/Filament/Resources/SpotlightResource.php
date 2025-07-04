@@ -337,13 +337,14 @@ class SpotlightResource extends Resource
                                             ->preload()
                                             ->label('Owner/Creator'),
                                             
-                                        Forms\Components\RichEditor::make('short_description')
+                                        // Short description field hidden as requested
+                                        /* Forms\Components\RichEditor::make('short_description')
                                             ->columnSpanFull()
-                                            ->required()
-                                            ->maxLength(1000),
+                                            ->maxLength(1000), */
                                             
                                         Forms\Components\RichEditor::make('description')
                                             ->columnSpanFull()
+                                            ->required()
                                             ->maxLength(5000),
                                     ]),
                                     
