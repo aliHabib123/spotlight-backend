@@ -702,7 +702,8 @@ class SpotlightResource extends Resource
     {
         return [
             // Removed AttributeValuesRelationManager as we now handle attributes directly in the form
-            RelationManagers\MediaRelationManager::class,
+            // Commented out MediaRelationManager for now - may use in future
+            // RelationManagers\MediaRelationManager::class,
         ];
     }
 
