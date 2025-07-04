@@ -367,27 +367,7 @@ class SpotlightResource extends Resource
                                             ->default(true),
                                     ]),
                                     
-                                Forms\Components\Section::make('Rating & Statistics')
-                                    ->schema([
-                                        Forms\Components\TextInput::make('rating')
-                                            ->label('Average Rating')
-                                            ->numeric()
-                                            ->minValue(0)
-                                            ->maxValue(5)
-                                            ->step(0.1),
-                                            
-                                        Forms\Components\TextInput::make('rating_count')
-                                            ->label('Number of Ratings')
-                                            ->integer()
-                                            ->minValue(0)
-                                            ->default(0),
-                                            
-                                        Forms\Components\TextInput::make('view_count')
-                                            ->label('View Count')
-                                            ->integer()
-                                            ->minValue(0)
-                                            ->default(0),
-                                    ]),
+
                             ]),
                             
                         Forms\Components\Tabs\Tab::make('Contact & Hours')
