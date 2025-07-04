@@ -348,17 +348,29 @@ class SpotlightCategoryController extends Controller
         $cacheKey = 'spotlight_category_filters_' . $category->id;
 
         return Cache::remember($cacheKey, 3600, function() use ($category, $request) {
-            // Get category attributes that are filterable
+            // Get category attributes that are filterable and not hierarchical
             $filterableAttributes = $category->attributeDefinitions()
-                ->with('options')
+                ->with(['options' => function($query) {
+                    // Only include options that don't have parent-child relationships
+                    $query->whereNull('parent_option_id');
+                }])
                 ->where('is_filterable', true)
+                // Exclude attributes with parent-child relationships
+                ->whereNull('parent_id')
+                ->whereDoesntHave('children')
                 ->orderBy('pivot_display_order', 'asc');
 
             // Include parent category filterable attributes if requested
             if ($request->input('include_parent', false) && $category->parent_id) {
                 $parentFilters = $category->parent->attributeDefinitions()
-                    ->with('options')
+                    ->with(['options' => function($query) {
+                        // Only include options that don't have parent-child relationships
+                        $query->whereNull('parent_option_id');
+                    }])
                     ->where('is_filterable', true)
+                    // Exclude attributes with parent-child relationships
+                    ->whereNull('parent_id')
+                    ->whereDoesntHave('children')
                     ->orderBy('pivot_display_order', 'asc');
 
                 $combined = $filterableAttributes->get()->merge($parentFilters->get());
@@ -385,7 +397,7 @@ class SpotlightCategoryController extends Controller
         foreach ($attributes as $attribute) {
             $filter = [
                 'id' => $attribute->id,
-                'key' => $attribute->key,
+                'key' => $attribute->slug, // Use slug as the key for API consistency
                 'name' => $attribute->name,
                 'type' => $attribute->type,
                 'display_type' => $attribute->display_type ?? null,

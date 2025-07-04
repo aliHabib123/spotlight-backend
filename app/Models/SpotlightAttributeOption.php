@@ -22,6 +22,7 @@ class SpotlightAttributeOption extends Model
         'label',
         'color',
         'display_order',
+        'parent_option_id',
     ];
     
     /**
@@ -48,5 +49,66 @@ class SpotlightAttributeOption extends Model
     public function getDisplayLabelAttribute(): string
     {
         return $this->label ?? $this->value;
+    }
+    
+    /**
+     * Get the parent option that this option belongs to.
+     */
+    public function parentOption(): BelongsTo
+    {
+        return $this->belongsTo(SpotlightAttributeOption::class, 'parent_option_id');
+    }
+    
+    /**
+     * Get the child options that belong to this option.
+     */
+    public function childOptions(): HasMany
+    {
+        return $this->hasMany(SpotlightAttributeOption::class, 'parent_option_id');
+    }
+    
+    /**
+     * Check if this option has a parent option.
+     *
+     * @return bool
+     */
+    public function hasParent(): bool
+    {
+        return $this->parent_option_id !== null;
+    }
+    
+    /**
+     * Check if this option has child options.
+     *
+     * @return bool
+     */
+    public function hasChildren(): bool
+    {
+        return $this->childOptions()->exists();
+    }
+    
+    /**
+     * Get all descendant option IDs recursively to prevent circular references.
+     *
+     * @return array
+     */
+    public function getAllChildrenIds(): array
+    {
+        $childrenIds = [];
+        
+        // Get immediate children
+        $children = $this->childOptions()->get();
+        
+        foreach ($children as $child) {
+            $childrenIds[] = $child->id;
+            
+            // Recursively get grandchildren
+            $grandchildrenIds = $child->getAllChildrenIds();
+            if (!empty($grandchildrenIds)) {
+                $childrenIds = array_merge($childrenIds, $grandchildrenIds);
+            }
+        }
+        
+        return $childrenIds;
     }
 }

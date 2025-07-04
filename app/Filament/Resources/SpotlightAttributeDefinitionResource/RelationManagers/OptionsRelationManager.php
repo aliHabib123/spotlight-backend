@@ -40,6 +40,25 @@ class OptionsRelationManager extends RelationManager
                     ->numeric()
                     ->default(0)
                     ->helperText('Options are displayed in ascending order'),
+                    
+                Forms\Components\Select::make('parent_option_id')
+                    ->label('Parent Option')
+                    ->relationship('parentOption', 'value', function ($query, $record) {
+                        // Only show options from the same attribute definition
+                        // Exclude the current option and its children to prevent circular references
+                        if ($record) {
+                            // Get all descendant IDs to avoid circular references
+                            $excludeIds = [$record->id];
+                            $childIds = $record->getAllChildrenIds();
+                            $excludeIds = array_merge($excludeIds, $childIds);
+                            return $query->whereNotIn('id', $excludeIds);
+                        }
+                        return $query;
+                    })
+                    ->searchable()
+                    ->preload()
+                    ->placeholder('No parent (top-level option)')
+                    ->helperText('Select a parent option to create a dependent relationship (e.g., District belongs to Governorate)'),
             ]);
     }
 

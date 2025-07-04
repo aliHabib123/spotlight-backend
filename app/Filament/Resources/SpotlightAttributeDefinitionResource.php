@@ -71,6 +71,14 @@ class SpotlightAttributeDefinitionResource extends Resource
 
                         Forms\Components\Textarea::make('description')
                             ->maxLength(1000),
+                        
+                        Forms\Components\Select::make('parent_id')
+                            ->label('Parent Attribute')
+                            ->relationship('parent', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->placeholder('No parent (top-level attribute)')
+                            ->helperText('Select a parent to create a dependent attribute (e.g., District depends on Governorate)'),
 
                         Forms\Components\KeyValue::make('validation_rules')
                             ->keyLabel('Rule')

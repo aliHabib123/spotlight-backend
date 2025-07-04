@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -27,6 +28,7 @@ class SpotlightAttributeDefinition extends Model
         'allows_multiple',
         'display_type',
         'display_order',
+        'parent_id',
     ];
     
     /**
@@ -74,6 +76,42 @@ class SpotlightAttributeDefinition extends Model
     public function values(): HasMany
     {
         return $this->hasMany(SpotlightAttributeValue::class, 'attribute_definition_id');
+    }
+    
+    /**
+     * Get the parent attribute definition.
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(SpotlightAttributeDefinition::class, 'parent_id');
+    }
+    
+    /**
+     * Get the child attribute definitions.
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(SpotlightAttributeDefinition::class, 'parent_id');
+    }
+    
+    /**
+     * Check if this attribute has a parent.
+     *
+     * @return bool
+     */
+    public function hasParent(): bool
+    {
+        return $this->parent_id !== null;
+    }
+    
+    /**
+     * Check if this attribute has children.
+     *
+     * @return bool
+     */
+    public function hasChildren(): bool
+    {
+        return $this->children()->exists();
     }
     
     /**

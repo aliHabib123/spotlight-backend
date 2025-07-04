@@ -20,7 +20,10 @@ class SpotlightAttributeDefinitionController extends Controller
     public function index(Request $request)
     {
         $query = SpotlightAttributeDefinition::query()
-            ->with('options')
+            ->with(['options' => function($query) {
+                // Only include options that don't have parent-child relationships
+                $query->whereNull('parent_option_id');
+            }])
             ->orderBy('name');
             
         // Filter by type
@@ -34,6 +37,10 @@ class SpotlightAttributeDefinitionController extends Controller
                 $q->where('spotlight_categories.id', $request->category_id);
             });
         }
+        
+        // Exclude attributes with parent-child relationships
+        $query->whereNull('parent_id')
+              ->whereDoesntHave('children');
             
         return response()->json($query->paginate($request->input('per_page', 25)));
     }
@@ -47,6 +54,92 @@ class SpotlightAttributeDefinitionController extends Controller
     public function show(SpotlightAttributeDefinition $attribute)
     {
         return response()->json($attribute->load('options', 'categories'));
+    }
+    
+    /**
+     * Get hierarchical filter data for a category, optimized for frontend filtering.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getHierarchicalFilters(Request $request)
+    {
+        $categoryId = $request->category_id;
+        
+        if (!$categoryId) {
+            return response()->json(['error' => 'Category ID is required'], 400);
+        }
+        
+        // Use caching for performance
+        $cacheKey = "hierarchical_filters_{$categoryId}_" . md5(json_encode($request->all()));
+        
+        return response()->json(Cache::remember($cacheKey, now()->addHour(), function () use ($categoryId) {
+            // Get all attribute definitions for this category with eager loading
+            $attributeDefinitions = SpotlightAttributeDefinition::whereHas('categories', function ($query) use ($categoryId) {
+                $query->where('spotlight_categories.id', $categoryId);
+            })->with([
+                'options' => function($query) {
+                    $query->orderBy('display_order');
+                },
+                'children' => function($query) {
+                    $query->orderBy('display_order');
+                },
+                'children.options' => function($query) {
+                    $query->orderBy('display_order');
+                }
+            ])
+            ->whereNull('parent_id') // Only get parent attributes
+            // Only include attributes that have children or whose options have child options
+            ->where(function($query) {
+                $query->has('children')
+                      ->orWhereHas('options', function($q) {
+                          $q->has('childOptions');
+                      });
+            })
+            ->orderBy('display_order')
+            ->get();
+            
+            // Format the response
+            return $attributeDefinitions->map(function($definition) {
+                $formattedOptions = $definition->options->map(function($option) {
+                    return [
+                        'id' => $option->id,
+                        'label' => $option->display_label,
+                        'value' => $option->value,
+                        'color' => $option->color,
+                    ];
+                });
+                
+                $formattedChildren = $definition->children->map(function($child) {
+                    return [
+                        'id' => $child->id,
+                        'name' => $child->name,
+                        'slug' => $child->slug,
+                        'type' => $child->type,
+                        'is_filterable' => $child->is_filterable,
+                        'options' => $child->options->map(function($option) {
+                            return [
+                                'id' => $option->id,
+                                'label' => $option->display_label,
+                                'value' => $option->value,
+                                'parent_option_id' => $option->parent_option_id,
+                                'color' => $option->color,
+                            ];
+                        }),
+                    ];
+                });
+                
+                return [
+                    'id' => $definition->id,
+                    'name' => $definition->name,
+                    'slug' => $definition->slug,
+                    'type' => $definition->type,
+                    'is_filterable' => $definition->is_filterable,
+                    'options' => $formattedOptions,
+                    'children' => $formattedChildren,
+                ];
+            });
+        }));
     }
     
     /**
