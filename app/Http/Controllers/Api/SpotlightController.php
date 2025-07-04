@@ -29,10 +29,8 @@ class SpotlightController extends Controller
         $query = Spotlight::query()
             ->with(['category', 'tags', 'location']);
 
-        // Filter by is_active if that column exists
-        if (Schema::hasColumn('spotlights', 'is_active')) {
-            $query->where('is_active', true);
-        }
+        // Filter by is_published
+        $query->where('is_published', true);
 
         // Apply filters
         if ($request->has('category_id')) {
@@ -106,10 +104,8 @@ class SpotlightController extends Controller
         $paginator = Cache::remember($cacheKey, 3600, function() use ($request) {
             return Spotlight::with(['category', 'tags', 'location'])
                 ->where('is_featured', true)
-                // Filter by is_active if that column exists
-                ->when(Schema::hasColumn('spotlights', 'is_active'), function($query) {
-                    return $query->where('is_active', true);
-                })
+                // Filter by is_published
+                ->where('is_published', true)
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->input('per_page', 8));
         });
@@ -130,10 +126,8 @@ class SpotlightController extends Controller
         $paginator = Cache::remember($cacheKey, 3600, function() use ($request) {
             return Spotlight::with(['category', 'tags', 'location'])
                 ->where('is_trending', true)
-                // Filter by is_active if that column exists
-                ->when(Schema::hasColumn('spotlights', 'is_active'), function($query) {
-                    return $query->where('is_active', true);
-                })
+                // Filter by is_published
+                ->where('is_published', true)
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->input('per_page', 8));
         });
@@ -160,10 +154,8 @@ class SpotlightController extends Controller
 
         $paginator = Spotlight::with(['category', 'tags', 'location'])
             ->whereIn('category_id', $categoryIds)
-            // Filter by is_active if that column exists (assuming spotlights have an active state)
-            ->when(Schema::hasColumn('spotlights', 'is_active'), function($query) {
-                return $query->where('is_active', true);
-            })
+            // Filter by is_published
+            ->where('is_published', true)
             ->orderBy('created_at', 'desc')
             ->paginate($request->input('per_page', 15));
 
@@ -289,9 +281,9 @@ class SpotlightController extends Controller
     {
         $this->authorize('view', $spotlight);
 
-        // For active spotlights, anyone can view
-        // For inactive ones, check permission
-        if (!$spotlight->is_active) {
+        // For published spotlights, anyone can view
+        // For unpublished ones, check permission
+        if (!$spotlight->is_published) {
             $this->authorize('manage', $spotlight);
         }
 
