@@ -18,23 +18,23 @@ class PermissionResource extends Resource
     protected static ?string $model = Permission::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-key';
-    
+
     public static function canAccess(): bool
     {
-        // Only super-admin users can manage user types
+        // Only super admin users can manage user types
         if (!Auth::check()) {
             return false;
         }
-        
+
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        
-        // Check if the user has the super-admin role
-        return $user->hasRole('super-admin');
+
+        // Check if the user has the super admin role
+        return $user->hasRole('super admin');
     }
-    
+
     protected static ?string $navigationGroup = 'User Management';
-    
+
     protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form

@@ -35,8 +35,8 @@ class FeatureFlagResource extends Resource
         /** @var User $user */
         $user = Auth::user();
 
-        // Check if the user has the super-admin role
-        return $user->hasRole('super-admin');
+        // Check if the user has the super admin role
+        return $user->hasRole('super admin');
     }
 
     public static function form(Form $form): Form

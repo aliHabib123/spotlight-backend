@@ -20,24 +20,24 @@ class SpotlightAttributeDefinitionResource extends Resource
 
     public static function canAccess(): bool
     {
-        // Only super-admin users can manage attribute definitions
+        // Only super admin users can manage attribute definitions
         if (!Auth::check()) {
             return false;
         }
-        
+
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        
-        // Check if the user has the super-admin role
-        return $user->hasRole('super-admin');
+
+        // Check if the user has the super admin role
+        return $user->hasRole('super admin');
     }
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-plus';
-    
+
     protected static ?string $navigationLabel = 'Attribute Definitions';
-    
+
     protected static ?string $navigationGroup = 'Spotlights';
-    
+
     protected static ?int $navigationSort = 40;
 
     public static function form(Form $form): Form
@@ -49,13 +49,13 @@ class SpotlightAttributeDefinitionResource extends Resource
                         Forms\Components\TextInput::make('name')
                             ->required()
                             ->maxLength(255),
-                            
+
                         Forms\Components\TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
                             ->unique(SpotlightAttributeDefinition::class, 'slug', ignoreRecord: true)
                             ->rules(['alpha_dash']),
-                            
+
                         Forms\Components\Select::make('type')
                             ->required()
                             ->options([
@@ -68,32 +68,32 @@ class SpotlightAttributeDefinitionResource extends Resource
                                 'datetime' => 'Date and Time',
                             ])
                             ->live(),
-                            
+
                         Forms\Components\Textarea::make('description')
                             ->maxLength(1000),
-                            
+
                         Forms\Components\KeyValue::make('validation_rules')
                             ->keyLabel('Rule')
                             ->valueLabel('Parameter')
                             ->helperText('e.g. "min" => "0", "max" => "100", "regex" => "pattern"')
                             ->visible(fn (Forms\Get $get) => in_array($get('type'), ['string', 'number']))
                             ->columnSpanFull(),
-                            
+
                         Forms\Components\Toggle::make('is_required')
                             ->label('Required')
                             ->default(false),
-                            
+
                         Forms\Components\Toggle::make('is_filterable')
                             ->label('Filterable')
                             ->helperText('Can be used as a filter in search queries')
                             ->default(false),
-                            
+
                         Forms\Components\Toggle::make('allows_multiple')
                             ->label('Multiple Values')
                             ->helperText('Allow multiple values for this attribute')
                             ->default(false)
                             ->visible(fn (Forms\Get $get) => $get('type') === 'enum'),
-                            
+
                         Forms\Components\Select::make('display_type')
                             ->label('UI Control Type')
                             ->options([
@@ -110,7 +110,7 @@ class SpotlightAttributeDefinitionResource extends Resource
                                 'datetime' => 'Date Time Picker',
                             ])
                             ->helperText('Override the default form control type'),
-                            
+
                         Forms\Components\TextInput::make('display_order')
                             ->numeric()
                             ->default(0),
@@ -128,11 +128,11 @@ class SpotlightAttributeDefinitionResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
@@ -145,32 +145,32 @@ class SpotlightAttributeDefinitionResource extends Resource
                         'datetime' => 'Date & Time',
                         default => $state,
                     }),
-                    
+
                 Tables\Columns\IconColumn::make('is_required')
                     ->label('Required')
                     ->boolean(),
-                    
+
                 Tables\Columns\IconColumn::make('is_filterable')
                     ->label('Filterable')
                     ->boolean(),
-                    
+
                 Tables\Columns\IconColumn::make('allows_multiple')
                     ->label('Multiple')
                     ->boolean(),
-                    
+
                 Tables\Columns\TextColumn::make('categories_count')
                     ->label('Categories')
                     ->formatStateUsing(fn ($state) => $state ?? 0),
-                    
+
                 Tables\Columns\TextColumn::make('options_count')
                     ->label('Options')
                     ->formatStateUsing(fn ($state) => $state ?? 0)
                     ->visible(fn ($record) => $record?->type === 'enum'),
-                    
+
                 Tables\Columns\TextColumn::make('display_order')
                     ->numeric()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
@@ -187,14 +187,14 @@ class SpotlightAttributeDefinitionResource extends Resource
                         'time' => 'Time',
                         'datetime' => 'Date & Time',
                     ]),
-                    
+
                 Tables\Filters\TernaryFilter::make('is_required')
                     ->label('Required Attributes')
                     ->placeholder('All Attributes')
                     ->trueLabel('Required Only')
                     ->falseLabel('Optional Only')
                     ->native(false),
-                    
+
                 Tables\Filters\TernaryFilter::make('is_filterable')
                     ->label('Filterable Attributes')
                     ->placeholder('All Attributes')
@@ -229,7 +229,7 @@ class SpotlightAttributeDefinitionResource extends Resource
             'edit' => Pages\EditSpotlightAttributeDefinition::route('/{record}/edit'),
         ];
     }
-    
+
     public static function getNavigationBadge(): ?string
     {
         return cache()->remember('spotlight_attribute_definitions_count', 300, function () {

@@ -20,22 +20,22 @@ class HomeScreenLocationResource extends Resource
 
     public static function canAccess(): bool
     {
-        // Only super-admin users can manage home screen locations
+        // Only super admin users can manage home screen locations
         if (!Auth::check()) {
             return false;
         }
-        
+
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        
-        // Check if the user has the super-admin role
-        return $user->hasRole('super-admin');
+
+        // Check if the user has the super admin role
+        return $user->hasRole('super admin');
     }
 
     protected static ?string $navigationIcon = 'heroicon-o-home';
-    
+
     protected static ?string $navigationGroup = 'Settings';
-    
+
     protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form
@@ -47,12 +47,12 @@ class HomeScreenLocationResource extends Resource
                         Forms\Components\TextInput::make('name')
                             ->required()
                             ->maxLength(255),
-                            
+
                         Forms\Components\TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true),
-                            
+
                         Forms\Components\TextInput::make('display_order')
                             ->numeric()
                             ->default(0),
@@ -68,20 +68,20 @@ class HomeScreenLocationResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('display_order')
                     ->numeric()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
