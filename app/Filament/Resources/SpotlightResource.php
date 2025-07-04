@@ -372,7 +372,8 @@ class SpotlightResource extends Resource
                             
                         Forms\Components\Tabs\Tab::make('Contact & Hours')
                             ->schema([
-                                Forms\Components\Section::make('Contact Information')
+                                // Contact Information section hidden as requested
+                                /* Forms\Components\Section::make('Contact Information')
                                     ->schema([
                                         Forms\Components\TextInput::make('contact_email')
                                             ->email()
@@ -385,7 +386,7 @@ class SpotlightResource extends Resource
                                         Forms\Components\TextInput::make('website')
                                             ->url()
                                             ->maxLength(255),
-                                    ]),
+                                    ]), */
                                     
                                 Forms\Components\Section::make('Social Media')
                                     ->schema([
@@ -460,7 +461,8 @@ class SpotlightResource extends Resource
                                             ->columnSpanFull(),
                                     ]),
                                     
-                                Forms\Components\Section::make('Opening Hours')
+                                // Opening Hours section hidden as requested
+                                /* Forms\Components\Section::make('Opening Hours')
                                     ->schema([
                                         Forms\Components\Toggle::make('has_opening_hours')
                                             ->label('Add Opening Hours')
@@ -497,8 +499,8 @@ class SpotlightResource extends Resource
                                             ->columns(4)
                                             ->columnSpanFull()
                                             ->visible(fn (Forms\Get $get) => $get('has_opening_hours'))
-                                            ->defaultItems(0),
-                                    ]),
+                                            ->defaultItems(0)
+                                    ), */
                             ]),
                             
                         Forms\Components\Tabs\Tab::make('Media & Video')
@@ -581,7 +583,7 @@ class SpotlightResource extends Resource
                             
                         // We've moved Custom Attributes section directly under category selection
                     ])
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
             ]);
     }
 
