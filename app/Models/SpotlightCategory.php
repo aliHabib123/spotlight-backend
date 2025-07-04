@@ -26,6 +26,7 @@ class SpotlightCategory extends Model
         'is_active',
         'display_order',
         'home_screen_location_id',
+        'show_location_filter',
     ];
     
     /**
@@ -35,6 +36,7 @@ class SpotlightCategory extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
+        'show_location_filter' => 'boolean',
     ];
     
     /**
