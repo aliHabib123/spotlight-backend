@@ -360,11 +360,6 @@ class SpotlightResource extends Resource
                                             ->helperText('Trending spotlights appear in trending sections')
                                             ->default(false),
                                             
-                                        Forms\Components\Toggle::make('is_verified')
-                                            ->label('Verified')
-                                            ->helperText('Verified spotlights have been confirmed by admins')
-                                            ->default(false),
-                                            
 
                                         Forms\Components\Toggle::make('is_published')
                                             ->label('Published')
@@ -702,13 +697,7 @@ class SpotlightResource extends Resource
                     ->falseLabel('Non-Trending Only')
                     ->native(false),
                     
-                Tables\Filters\TernaryFilter::make('is_verified')
-                    ->label('Verified')
-                    ->placeholder('All Spotlights')
-                    ->trueLabel('Verified Only')
-                    ->falseLabel('Unverified Only')
-                    ->native(false),
-                    
+
                 Tables\Filters\SelectFilter::make('tags')
                     ->relationship('tags', 'name')
                     ->searchable()
