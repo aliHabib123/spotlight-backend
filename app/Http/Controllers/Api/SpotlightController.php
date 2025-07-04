@@ -442,8 +442,7 @@ class SpotlightController extends Controller
         $this->authorize('publish', $spotlight);
 
         $spotlight->update([
-            'is_active' => true,
-            'published_at' => now(),
+            'is_published' => true,
         ]);
 
         return response()->json([
@@ -463,7 +462,7 @@ class SpotlightController extends Controller
         $this->authorize('publish', $spotlight);
 
         $spotlight->update([
-            'is_active' => false,
+            'is_published' => false,
         ]);
 
         return response()->json([

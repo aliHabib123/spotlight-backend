@@ -349,11 +349,7 @@ class SpotlightResource extends Resource
                                     
                                 Forms\Components\Section::make('Status & Features')
                                     ->schema([
-                                        Forms\Components\Toggle::make('is_published')
-                                            ->label('Published')
-                                            ->helperText('Only published spotlights are visible to the public')
-                                            ->default(false),
-                                            
+
                                         Forms\Components\Toggle::make('is_featured')
                                             ->label('Featured')
                                             ->helperText('Featured spotlights appear in featured sections')
@@ -369,9 +365,11 @@ class SpotlightResource extends Resource
                                             ->helperText('Verified spotlights have been confirmed by admins')
                                             ->default(false),
                                             
-                                        Forms\Components\DateTimePicker::make('published_at')
-                                            ->label('Published Date')
-                                            ->default(now()),
+
+                                        Forms\Components\Toggle::make('is_published')
+                                            ->label('Published')
+                                            ->helperText('Only published spotlights are visible to the public')
+                                            ->default(true),
                                     ]),
                                     
                                 Forms\Components\Section::make('Rating & Statistics')
