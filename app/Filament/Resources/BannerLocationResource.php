@@ -20,22 +20,22 @@ class BannerLocationResource extends Resource
 
     public static function canAccess(): bool
     {
-        // Only super-admin users can manage banner locations
+        // Only super admin users can manage banner locations
         if (!Auth::check()) {
             return false;
         }
-        
+
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        
-        // Check if the user has the super-admin role
-        return $user->hasRole('super-admin');
+
+        // Check if the user has the super admin role
+        return $user->hasRole('super admin');
     }
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-group';
-    
+
     protected static ?string $navigationGroup = 'Content Management';
-    
+
     protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form

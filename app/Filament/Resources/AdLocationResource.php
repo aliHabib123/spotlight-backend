@@ -22,24 +22,24 @@ class AdLocationResource extends Resource
 
     public static function canAccess(): bool
     {
-        // Only super-admin users can manage ad locations
+        // Only super admin users can manage ad locations
         if (!Auth::check()) {
             return false;
         }
-        
+
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        
-        // Check if the user has the super-admin role
-        return $user->hasRole('super-admin');
+
+        // Check if the user has the super admin role
+        return $user->hasRole('super admin');
     }
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-group';
-    
+
     protected static ?string $navigationGroup = 'Content Management';
-    
+
     protected static ?int $navigationSort = 20;
-    
+
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
@@ -120,12 +120,12 @@ class AdLocationResource extends Resource
             'edit' => Pages\EditAdLocation::route('/{record}/edit'),
         ];
     }
-    
+
     public static function getModelLabel(): string
     {
         return 'Ad Location';
     }
-    
+
     public static function getPluralModelLabel(): string
     {
         return 'Ad Locations';
