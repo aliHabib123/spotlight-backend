@@ -17,9 +17,9 @@ class TagResource extends Resource
     protected static ?string $model = Tag::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
-    
+
     protected static ?string $navigationGroup = 'Spotlights';
-    
+
     protected static ?int $navigationSort = 20;
 
     public static function form(Form $form): Form
@@ -32,27 +32,27 @@ class TagResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) => 
+                            ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) =>
                                 $operation === 'create' ? $set('slug', Str::slug($state)) : null
                             ),
-                            
+
                         Forms\Components\TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
                             ->unique(Tag::class, 'slug', ignoreRecord: true)
                             ->rules(['alpha_dash'])
                             ->helperText('Auto-generated from name if left empty.'),
-                            
+
                         Forms\Components\Hidden::make('type')
                             ->default('general'),
-                            
+
                         Forms\Components\Hidden::make('color')
                             ->default('#ffffff'),
-                            
+
                         Forms\Components\TextInput::make('display_order')
                             ->numeric()
                             ->default(0),
-                            
+
                         Forms\Components\Select::make('category_id')
                             ->relationship('category', 'name')
                             ->label('Category')
@@ -70,52 +70,56 @@ class TagResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
                     ->sortable()
                     ->formatStateUsing(fn (string $state) => Str::title($state)),
-                    
+
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Category')
                     ->sortable(),
-                    
-                Tables\Columns\ColorColumn::make('color')
-                    ->toggleable(),
-                    
+
+                // Tables\Columns\ColorColumn::make('color')
+                //     ->toggleable(),
+
                 Tables\Columns\TextColumn::make('spotlights_count')
                     ->counts('spotlights')
                     ->label('Spotlights')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('display_order')
                     ->numeric()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('type')
-                    ->options([
-                        'general' => 'General',
-                        'amenity' => 'Amenity',
-                        'cuisine' => 'Cuisine',
-                        'feature' => 'Feature',
-                        'style' => 'Style',
-                        'season' => 'Season',
-                    ]),
+                // Tables\Filters\SelectFilter::make('type')
+                //     ->options([
+                //         'general' => 'General',
+                //         'amenity' => 'Amenity',
+                //         'cuisine' => 'Cuisine',
+                //         'feature' => 'Feature',
+                //         'style' => 'Style',
+                //         'season' => 'Season',
+                //     ]),
+                Tables\Filters\SelectFilter::make('category')
+    ->relationship('category', 'name')
+    ->preload()
+    ->searchable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -165,7 +169,7 @@ class TagResource extends Resource
             'edit' => Pages\EditTag::route('/{record}/edit'),
         ];
     }
-    
+
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
