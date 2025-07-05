@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
@@ -242,37 +243,53 @@ class AuthController extends Controller
      */
     public function deleteAccount(Request $request): JsonResponse
     {
-        // Get the authenticated user
-        $user = auth('api')->user();
-        
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-        
-        // Verify password to confirm deletion request
-        $validator = Validator::make($request->all(), [
-            'password' => 'required|string'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
-        
-        // Check if the provided password matches
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json(['error' => 'Current password is incorrect'], 422);
-        }
-        
         try {
+            // Get the authenticated user
+            $user = auth('api')->user();
+            
+            if (!$user) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+            
+            // Store user ID before we do anything else
+            $userId = $user->id;
+            
+            // Verify password to confirm deletion request
+            $validator = Validator::make($request->all(), [
+                'password' => 'required|string'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['error' => 'Validation failed', 'details' => $validator->errors()], 422);
+            }
+            
+            // Check if the provided password matches
+            if (!Hash::check((string)$request->password, (string)$user->password)) {
+                return response()->json(['error' => 'Current password is incorrect'], 422);
+            }
+            
+            // Delete the user account first
+            $deleted = User::where('id', $userId)->delete();
+            
+            if (!$deleted) {
+                return response()->json(['error' => 'Failed to delete account'], 500);
+            }
+            
             // Log the user out by invalidating their token
             auth('api')->logout();
             
-            // Delete the user account
-            User::where('id', $user->id)->delete();
-            
             return response()->json(['message' => 'Account successfully deleted'], 200);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to delete account', 'message' => $e->getMessage()], 500);
+            // Log the exception but ensure we return JSON
+            Log::error('Account deletion failed: ' . $e->getMessage(), [
+                'user_id' => $request->user('api') ? $request->user('api')->id : null,
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'error' => 'Failed to delete account',
+                'message' => 'An unexpected error occurred'
+            ], 500);
         }
     }
 }
