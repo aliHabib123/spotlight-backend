@@ -387,13 +387,8 @@ class SpotlightResource extends Resource
 
                                 Forms\Components\Section::make('Social Media')
                                     ->schema([
-                                        Forms\Components\Toggle::make('has_social_media')
-                                            ->label('Add Social Media Links')
-                                            ->helperText('Enable to add social media profiles')
-                                            ->default(false)
-                                            ->live(),
 
-                                        Forms\Components\Repeater::make('social_media')
+                                        Forms\Components\Repeater::make('social_links')
                                             ->schema([
                                                 Forms\Components\Grid::make()
                                                     ->schema([
@@ -442,7 +437,6 @@ class SpotlightResource extends Resource
                                             ->itemLabel(fn (array $state): ?string =>
                                                 $state['platform'] ? ucfirst($state['platform']) : null
                                             )
-                                            ->visible(fn (Forms\Get $get) => $get('has_social_media'))
                                             ->defaultItems(0)
                                             ->reorderable()
                                             ->columnSpanFull(),

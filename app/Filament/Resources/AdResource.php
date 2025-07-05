@@ -53,13 +53,26 @@ class AdResource extends Resource
                                             ->required()
                                             ->maxLength(255),
                                         Forms\Components\Textarea::make('description')
-                                            ->maxLength(65535)
-                                            ->hidden(),
+                                            ->maxLength(65535),
                                         Forms\Components\TextInput::make('link_url')
                                             ->label('Link URL')
                                             ->url()
+                                            ->maxLength(255),
+                                        Forms\Components\Select::make('media_type')
+                                            ->label('Media Type')
+                                            ->options([
+                                                'image' => 'Image',
+                                                'youtube' => 'YouTube Video'
+                                            ])
+                                            ->default('image')
+                                            ->required()
+                                            ->reactive(),
+                                        Forms\Components\TextInput::make('video_url')
+                                            ->label('YouTube Video URL')
+                                            ->url()
                                             ->maxLength(255)
-                                            ->hidden(),
+                                            ->helperText('Enter a YouTube video URL (e.g. https://www.youtube.com/watch?v=VIDEO_ID)')
+                                            ->visible(fn (callable $get) => $get('media_type') === 'youtube'),
                                     ]),
                                     
                                 Forms\Components\Section::make('Display Settings')
@@ -98,8 +111,10 @@ class AdResource extends Resource
                             ])
                             ->columnSpan(['lg' => 2]),
                             
-                        // Right column - Image
-                        Forms\Components\Section::make('Ad Image')
+                        // Right column - Media content (Image or Video Preview)
+                        Forms\Components\Section::make(function (callable $get) {
+                                return $get('media_type') === 'youtube' ? 'YouTube Video Preview' : 'Ad Image';
+                            })
                             ->schema([
                                 Forms\Components\FileUpload::make('image')
                                     ->label('Ad Image')
@@ -108,7 +123,12 @@ class AdResource extends Resource
                                     ->imageResizeMode('cover')
                                     ->imageCropAspectRatio('16:9')
                                     ->directory('ads')
-                                    ->required(),
+                                    ->visible(fn (callable $get) => $get('media_type') === 'image')
+                                    ->required(fn (callable $get) => $get('media_type') === 'image'),
+                                    
+                                Forms\Components\View::make('filament.components.youtube-preview')
+                                    ->visible(fn (callable $get) => $get('media_type') === 'youtube' && !empty($get('video_url')))
+                                    ->viewData(fn (callable $get) => ['videoUrl' => $get('video_url')]),
                             ])
                             ->columnSpan(['lg' => 1]),
                     ])
