@@ -20,6 +20,8 @@ class Ad extends Model
         'description',
         'image',
         'link_url',
+        'media_type',
+        'video_url',
         'ad_location_id',
         'user_id',
         'is_active',
@@ -37,7 +39,33 @@ class Ad extends Model
         'is_active' => 'boolean',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'media_type' => 'string',
     ];
+    
+    /**
+     * Get the YouTube video ID from the video URL.
+     *
+     * @return string|null
+     */
+    public function getYoutubeEmbedAttribute(): ?string
+    {
+        if ($this->media_type !== 'youtube' || empty($this->video_url)) {
+            return null;
+        }
+        
+        $videoId = null;
+        
+        // Parse YouTube URL to extract video ID
+        if (preg_match('/youtube\.com\/watch\?v=([\w-]+)/', $this->video_url, $matches)) {
+            $videoId = $matches[1];
+        } elseif (preg_match('/youtu\.be\/([\w-]+)/', $this->video_url, $matches)) {
+            $videoId = $matches[1];
+        } elseif (preg_match('/youtube\.com\/embed\/([\w-]+)/', $this->video_url, $matches)) {
+            $videoId = $matches[1];
+        }
+        
+        return $videoId;
+    }
     
     /**
      * Get the location that owns the ad.

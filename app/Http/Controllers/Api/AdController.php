@@ -61,7 +61,9 @@ class AdController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'media_type' => 'required|in:image,youtube',
+            'image' => $request->input('media_type') === 'image' ? 'required|image|mimes:jpeg,png,jpg,gif|max:2048' : 'nullable',
+            'video_url' => $request->input('media_type') === 'youtube' ? 'required|url|max:255' : 'nullable',
             'link_url' => 'nullable|url|max:255',
             'ad_location_id' => 'required|exists:ad_locations,id',
             'is_active' => 'boolean',
