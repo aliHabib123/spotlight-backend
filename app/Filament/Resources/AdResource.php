@@ -53,11 +53,13 @@ class AdResource extends Resource
                                             ->required()
                                             ->maxLength(255),
                                         Forms\Components\Textarea::make('description')
-                                            ->maxLength(65535),
+                                            ->maxLength(65535)
+                                            ->hidden(),
                                         Forms\Components\TextInput::make('link_url')
                                             ->label('Link URL')
                                             ->url()
-                                            ->maxLength(255),
+                                            ->maxLength(255)
+                                            ->hidden(),
                                         Forms\Components\Select::make('media_type')
                                             ->label('Media Type')
                                             ->options([
@@ -82,14 +84,7 @@ class AdResource extends Resource
                                             ->relationship('adLocation', 'name')
                                             ->required()
                                             ->searchable()
-                                            ->preload()
-                                            ->createOptionForm([
-                                                Forms\Components\TextInput::make('name')
-                                                    ->required()
-                                                    ->maxLength(255),
-                                                Forms\Components\Textarea::make('description')
-                                                    ->maxLength(65535),
-                                            ]),
+                                            ->preload(),
                                         Forms\Components\Grid::make()
                                             ->schema([
                                                 Forms\Components\Toggle::make('is_active')
