@@ -26,6 +26,9 @@ class SpotlightController extends Controller
      */
     public function index(Request $request)
     {
+        // Enable query logging
+        DB::enableQueryLog();
+
         $query = Spotlight::query()
             ->with(['category', 'tags', 'location']);
 
@@ -67,16 +70,64 @@ class SpotlightController extends Controller
         }
 
         // Custom attributes filter
-        if ($request->has('attributes') && is_array($request->attributes)) {
-            foreach ($request->attributes as $key => $value) {
-                $query->whereHas('attributeValues', function($q) use ($key, $value) {
-                    $q->whereHas('attributeDefinition', function($sq) use ($key) {
-                        $sq->where('key', $key);
-                    })
-                    ->where(function($sq) use ($value) {
+        if ($request->has('attributes') && is_array($request->input('attributes'))) {
+            $attributesInput = $request->input('attributes');
+
+            foreach ($attributesInput as $key => $value) {
+                // Add this to detailed logs
+                \Illuminate\Support\Facades\Log::info("Processing attribute filter: {$key} = {$value}");
+
+                // First, check if the attribute definition exists with the given name or slug
+                $attrDefQuery = DB::table('spotlight_attribute_definitions')
+                    ->where('slug', $key)
+                    ->orWhere('name', $key);
+
+                // Log the SQL
+                \Illuminate\Support\Facades\Log::info("Attribute definition check SQL: " . $attrDefQuery->toSql());
+
+                $attrDef = $attrDefQuery->first();
+
+                // If attribute definition doesn't exist, return empty results
+                // if (!$attrDef) {
+                //     \Illuminate\Support\Facades\Log::info("Attribute '{$key}' not found - returning empty results");
+                //     // This forces an empty result set
+                //     $query->whereRaw('1 = 0');
+                //     return response()->json([]);
+                // }
+
+                // Check if any spotlights have this attribute with this value
+                $attributeValueQuery = DB::table('spotlight_attribute_values')
+                    ->where('attribute_definition_id', $attrDef->id)
+                    ->where(function($q) use ($value) {
+                        $q->where('value', $value)
+                          ->orWhereExists(function($sq) use ($value) {
+                              $sq->select(DB::raw(1))
+                                 ->from('spotlight_attribute_options')
+                                 ->whereColumn('spotlight_attribute_options.id', 'spotlight_attribute_values.attribute_option_id')
+                                 ->where('spotlight_attribute_options.value', $value);
+                          });
+                    });
+
+                // Log the value check SQL
+                \Illuminate\Support\Facades\Log::info("Value check SQL: " . $attributeValueQuery->toSql());
+
+                // $valueExists = $attributeValueQuery->exists();
+
+                // If the value doesn't exist for any spotlight, return empty results
+                // if (!$valueExists) {
+                //     \Illuminate\Support\Facades\Log::info("Value '{$value}' not found for attribute '{$key}' - returning empty results");
+                //     // This forces an empty result set
+                //     $query->whereRaw('1 = 0');
+                //     return response()->json([]);
+                // }
+
+                // If we get here, both the attribute and value exist, so apply the filter
+                $query->whereHas('attributeValues', function($q) use ($attrDef, $value) {
+                    $q->where('attribute_definition_id', $attrDef->id)
+                      ->where(function($sq) use ($value) {
                         $sq->where('value', $value)
-                          ->orWhereHas('attributeOption', function($osq) use ($value) {
-                              $osq->where('value', $value);
+                          ->orWhereHas('attributeOption', function($optionQ) use ($value) {
+                              $optionQ->where('value', $value);
                           });
                     });
                 });
@@ -88,7 +139,26 @@ class SpotlightController extends Controller
         $sortDirection = $request->input('sort_direction', 'desc');
         $query->orderBy($sortField, $sortDirection);
 
-        return response()->json($query->paginate($request->input('per_page', 15)));
+        $result = $query->paginate($request->input('per_page', 15));
+
+        // Log queries to storage for debugging
+        $log = [
+            'request_all' => $request->all(),
+            'request_input' => $request->input(),
+            'has_attributes' => $request->has('attributes'),
+            'attributes_input' => $request->input('attributes'),
+            'query_string' => $request->getQueryString(),
+            'server_query_string' => $_SERVER['QUERY_STRING'] ?? null,
+            'queries' => DB::getQueryLog(),
+        ];
+
+        // Store in public directory for easier access
+        Storage::disk('public')->put('spotlight_filter_log.json', json_encode($log, JSON_PRETTY_PRINT));
+
+        // Log to Laravel log file
+        \Illuminate\Support\Facades\Log::info('Spotlight Filter Debug', ['data' => $log]);
+
+        return response()->json($result);
     }
 
     /**

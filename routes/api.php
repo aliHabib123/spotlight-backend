@@ -92,6 +92,7 @@ Route::prefix('v1')->group(function () {
     // Attribute Definitions - Read only for public
     Route::get('/attributes', [\App\Http\Controllers\Api\SpotlightAttributeDefinitionController::class, 'index']);
     Route::get('/attributes/{attribute}', [\App\Http\Controllers\Api\SpotlightAttributeDefinitionController::class, 'show']);
+    Route::get('/hierarchical-filters', [\App\Http\Controllers\Api\SpotlightAttributeDefinitionController::class, 'getHierarchicalFilters']);
 
     // Banner Locations - Public
     Route::get('/banners/locations', [BannerLocationController::class, 'index']);

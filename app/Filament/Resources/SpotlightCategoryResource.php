@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class SpotlightCategoryResource extends Resource
@@ -19,10 +20,28 @@ class SpotlightCategoryResource extends Resource
     protected static ?string $model = SpotlightCategory::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    
+
     protected static ?string $navigationGroup = 'Spotlights';
-    
+
     protected static ?int $navigationSort = 10;
+
+    /**
+     * Check if the current user is a super admin
+     *
+     * @return bool
+     */
+    protected static function isSuperAdmin(): bool
+    {
+        if (!Auth::check()) {
+            return false;
+        }
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // Check if the user has the super admin role
+        return $user->hasRole('super admin');
+    }
 
     public static function form(Form $form): Form
     {
@@ -34,17 +53,17 @@ class SpotlightCategoryResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) => 
+                            ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) =>
                                 $operation === 'create' ? $set('slug', Str::slug($state)) : null
                             ),
-                            
+
                         Forms\Components\TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
                             ->unique(SpotlightCategory::class, 'slug', ignoreRecord: true)
                             ->helperText('Auto-generated from name if left empty.')
                             ->rules(['alpha_dash']),
-                            
+
                         Forms\Components\FileUpload::make('icon')
                             ->image()
                             ->imageEditor()
@@ -53,30 +72,41 @@ class SpotlightCategoryResource extends Resource
                             ->maxSize(2048)
                             ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg'])
                             ->helperText('Upload a PNG or JPG image for the category icon'),
-                            
+
                         Forms\Components\Textarea::make('description')
                             ->maxLength(1000)
                             ->columnSpanFull(),
-                            
+
                         Forms\Components\Select::make('parent_id')
                             ->label('Parent Category')
                             ->relationship('parent', 'name')
                             ->searchable()
-                            ->preload(),
-                            
+                            ->preload()
+                            // Only show this field to users with super admin privileges
+                            ->visible(fn () => static::isSuperAdmin()),
+
                         Forms\Components\Toggle::make('is_active')
                             ->label('Active')
                             ->default(true),
-                            
+
                         Forms\Components\TextInput::make('display_order')
                             ->numeric()
                             ->default(0),
-                            
+
                         Forms\Components\Select::make('home_screen_location_id')
                             ->label('Home Screen Location')
                             ->relationship('homeScreenLocation', 'name')
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            // Only show this field to users with super admin privileges
+                            ->visible(fn () => static::isSuperAdmin()),
+
+                        Forms\Components\Toggle::make('show_location_filter')
+                            ->label('Show Location Filter')
+                            ->helperText('When enabled, this category will show location filters in the mobile app')
+                            ->default(true)
+                            // Only show this field to users with super admin privileges
+                            ->visible(fn () => static::isSuperAdmin()),
                     ]),
             ]);
     }
@@ -93,41 +123,52 @@ class SpotlightCategoryResource extends Resource
                     })
                     ->width(40)
                     ->height(40),
-                    
+
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable(),
-                    
+
                 Tables\Columns\TextColumn::make('parent.name')
-                    ->label('Parent')
-                    ->sortable(),
-                    
+                    ->label('Parent Category')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable()
+                    ->visible(fn () => static::isSuperAdmin()),
+
+                Tables\Columns\IconColumn::make('show_location_filter')
+                    ->label('Location Filter')
+                    ->boolean()
+                    ->sortable()
+                    ->toggleable()
+                    ->visible(fn () => static::isSuperAdmin()),
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('display_order')
                     ->numeric()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('homeScreenLocation.name')
                     ->label('Home Screen Location')
-                    ->sortable(),
-                    
+                    ->sortable()
+                    ->visible(fn () => static::isSuperAdmin()),
+
                 Tables\Columns\TextColumn::make('spotlights_count')
                     ->label('Spotlights')
                     ->counts('spotlights')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -136,8 +177,9 @@ class SpotlightCategoryResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('parent_id')
                     ->label('Parent Category')
-                    ->relationship('parent', 'name'),
-                    
+                    ->relationship('parent', 'name')
+                    ->visible(fn () => static::isSuperAdmin()),
+
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label('Active Status')
                     ->placeholder('All Categories')
@@ -155,7 +197,7 @@ class SpotlightCategoryResource extends Resource
                     Tables\Actions\BulkAction::make('toggle_active')
                         ->label('Toggle Active Status')
                         ->icon('heroicon-o-power')
-                        ->action(fn (Builder $query) => $query->each(fn (SpotlightCategory $category) => 
+                        ->action(fn (Builder $query) => $query->each(fn (SpotlightCategory $category) =>
                             $category->update(['is_active' => !$category->is_active])
                         ))
                         ->deselectRecordsAfterCompletion(),
@@ -179,7 +221,7 @@ class SpotlightCategoryResource extends Resource
             'edit' => Pages\EditSpotlightCategory::route('/{record}/edit'),
         ];
     }
-    
+
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
