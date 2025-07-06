@@ -29,7 +29,10 @@ class ShippingAddressController extends Controller
             ], 401);
         }
         
-        $addresses = ShippingAddress::where('user_id', $user->id)->get();
+        $addresses = ShippingAddress::where('user_id', $user->id)
+            ->orderBy('is_default', 'desc')  // Default addresses first
+            ->orderBy('created_at', 'desc')  // Most recently added next
+            ->get();
         
         return response()->json([
             'status' => 'success',
@@ -78,22 +81,31 @@ class ShippingAddressController extends Controller
             ], 422);
         }
         
+        // This endpoint requires authentication
+        $user = Auth::guard('api')->user();
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthenticated'
+            ], 401);
+        }
+        
         $isDefault = $request->input('is_default', false);
         
         // If this is the first address or marked as default, update other addresses
         if ($isDefault) {
-            ShippingAddress::where('user_id', Auth::id())
+            ShippingAddress::where('user_id', $user->id)
                 ->update(['is_default' => false]);
         }
         
         // If this is the first address for the user, make it default regardless
-        $addressCount = ShippingAddress::where('user_id', Auth::id())->count();
+        $addressCount = ShippingAddress::where('user_id', $user->id)->count();
         if ($addressCount === 0) {
             $isDefault = true;
         }
         
         $address = new ShippingAddress($request->all());
-        $address->user_id = Auth::id();
+        $address->user_id = $user->id;
         $address->is_default = $isDefault;
         $address->save();
         
