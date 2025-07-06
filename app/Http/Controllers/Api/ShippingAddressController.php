@@ -16,14 +16,20 @@ class ShippingAddressController extends Controller
     public function index()
     {
         // This endpoint requires authentication
-        if (!Auth::check()) {
+        $user = Auth::guard('api')->user();
+        if (!$user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Unauthenticated'
+                'message' => 'Unauthenticated',
+                'debug' => [
+                    'token_exists' => !empty(request()->bearerToken()),
+                    'guard' => 'api',
+                    'path' => request()->path()
+                ]
             ], 401);
         }
         
-        $addresses = ShippingAddress::where('user_id', Auth::id())->get();
+        $addresses = ShippingAddress::where('user_id', $user->id)->get();
         
         return response()->json([
             'status' => 'success',
@@ -37,10 +43,16 @@ class ShippingAddressController extends Controller
     public function store(Request $request)
     {
         // This endpoint requires authentication
-        if (!Auth::check()) {
+        $user = Auth::guard('api')->user();
+        if (!$user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Unauthenticated'
+                'message' => 'Unauthenticated',
+                'debug' => [
+                    'token_exists' => !empty(request()->bearerToken()),
+                    'guard' => 'api',
+                    'path' => request()->path()
+                ]
             ], 401);
         }
         
@@ -98,15 +110,21 @@ class ShippingAddressController extends Controller
     public function show(string $id)
     {
         // This endpoint requires authentication
-        if (!Auth::check()) {
+        $user = Auth::guard('api')->user();
+        if (!$user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Unauthenticated'
+                'message' => 'Unauthenticated',
+                'debug' => [
+                    'token_exists' => !empty(request()->bearerToken()),
+                    'guard' => 'api',
+                    'path' => request()->path()
+                ]
             ], 401);
         }
         
         $address = ShippingAddress::where('id', $id)
-            ->where('user_id', Auth::id())
+            ->where('user_id', $user->id)
             ->firstOrFail();
         
         return response()->json([
@@ -121,10 +139,16 @@ class ShippingAddressController extends Controller
     public function update(Request $request, string $id)
     {
         // This endpoint requires authentication
-        if (!Auth::check()) {
+        $user = Auth::guard('api')->user();
+        if (!$user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Unauthenticated'
+                'message' => 'Unauthenticated',
+                'debug' => [
+                    'token_exists' => !empty(request()->bearerToken()),
+                    'guard' => 'api',
+                    'path' => request()->path()
+                ]
             ], 401);
         }
         
@@ -151,12 +175,12 @@ class ShippingAddressController extends Controller
         }
         
         $address = ShippingAddress::where('id', $id)
-            ->where('user_id', Auth::id())
+            ->where('user_id', $user->id)
             ->firstOrFail();
         
         // If setting as default, update other addresses
         if ($request->has('is_default') && $request->is_default) {
-            ShippingAddress::where('user_id', Auth::id())
+            ShippingAddress::where('user_id', $user->id)
                 ->where('id', '!=', $id)
                 ->update(['is_default' => false]);
         }
@@ -176,19 +200,25 @@ class ShippingAddressController extends Controller
     public function setDefault(string $id)
     {
         // This endpoint requires authentication
-        if (!Auth::check()) {
+        $user = Auth::guard('api')->user();
+        if (!$user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Unauthenticated'
+                'message' => 'Unauthenticated',
+                'debug' => [
+                    'token_exists' => !empty(request()->bearerToken()),
+                    'guard' => 'api',
+                    'path' => request()->path()
+                ]
             ], 401);
         }
         
         $address = ShippingAddress::where('id', $id)
-            ->where('user_id', Auth::id())
+            ->where('user_id', $user->id)
             ->firstOrFail();
         
         // Update all addresses to not be default
-        ShippingAddress::where('user_id', Auth::id())
+        ShippingAddress::where('user_id', $user->id)
             ->update(['is_default' => false]);
         
         // Set this address as default
@@ -208,15 +238,21 @@ class ShippingAddressController extends Controller
     public function destroy(string $id)
     {
         // This endpoint requires authentication
-        if (!Auth::check()) {
+        $user = Auth::guard('api')->user();
+        if (!$user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Unauthenticated'
+                'message' => 'Unauthenticated',
+                'debug' => [
+                    'token_exists' => !empty(request()->bearerToken()),
+                    'guard' => 'api',
+                    'path' => request()->path()
+                ]
             ], 401);
         }
         
         $address = ShippingAddress::where('id', $id)
-            ->where('user_id', Auth::id())
+            ->where('user_id', $user->id)
             ->firstOrFail();
         
         $wasDefault = $address->is_default;

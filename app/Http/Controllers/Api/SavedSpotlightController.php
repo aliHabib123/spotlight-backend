@@ -20,7 +20,25 @@ class SavedSpotlightController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user = Auth::user();
+        // Get auth info for debugging
+        $token = $request->bearerToken();
+        $tokenExists = !empty($token);
+        $user = Auth::guard('api')->user();
+        
+        // Check if user is authenticated
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized - User not authenticated',
+                'debug' => [
+                    'token_exists' => $tokenExists,
+                    'guard' => 'api',
+                    'auth_header' => $request->header('Authorization'),
+                    'accept_header' => $request->header('Accept')
+                ]
+            ], 401);
+        }
+        
         $perPage = $request->input('per_page', 10);
         
         // Get the IDs of saved spotlights
@@ -46,7 +64,16 @@ class SavedSpotlightController extends Controller
      */
     public function save($id): JsonResponse
     {
-        $user = Auth::user();
+        $user = Auth::guard('api')->user();
+        
+        // Check if user is authenticated
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized - User not authenticated'
+            ], 401);
+        }
+        
         $spotlight = Spotlight::findOrFail($id);
         
         // Check if already saved
@@ -85,7 +112,15 @@ class SavedSpotlightController extends Controller
      */
     public function unsave($id): JsonResponse
     {
-        $user = Auth::user();
+        $user = Auth::guard('api')->user();
+        
+        // Check if user is authenticated
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized - User not authenticated'
+            ], 401);
+        }
         
         $savedSpotlight = SavedSpotlight::where('user_id', $user->id)
             ->where('spotlight_id', $id)
@@ -114,7 +149,21 @@ class SavedSpotlightController extends Controller
      */
     public function check($id): JsonResponse
     {
-        $user = Auth::user();
+        $user = Auth::guard('api')->user();
+        
+        // Check if user is authenticated
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized - User not authenticated',
+                'debug' => [
+                    'token_exists' => !empty(request()->bearerToken()),
+                    'guard' => 'api',
+                    'auth_header' => request()->header('Authorization'),
+                    'accept_header' => request()->header('Accept')
+                ]
+            ], 401);
+        }
         
         $isSaved = SavedSpotlight::where('user_id', $user->id)
             ->where('spotlight_id', $id)
