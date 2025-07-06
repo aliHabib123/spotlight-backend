@@ -192,14 +192,6 @@ class SpotlightResource extends Resource
                                                         case 'select':
                                                             $options = $definition->options->pluck('display_label', 'id')->toArray();
 
-                                                            // Debug to verify option values
-                                                            \Illuminate\Support\Facades\Log::debug('Select field options', [
-                                                                'definition' => $definition->name,
-                                                                'options' => $options,
-                                                                'currentOptionId' => $currentOptionId,
-                                                                'values' => $record ? ($attributesByDef[$definition->id]['values'] ?? []) : []
-                                                            ]);
-
                                                             $attributeFields[] = Forms\Components\Select::make($fieldName)
                                                                 ->label($definition->name)
                                                                 ->helperText($definition->description)

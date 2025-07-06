@@ -52,33 +52,33 @@ class CreateSpotlight extends CreateRecord
                 
                 if (!$definition) continue;
                 
-                // Save new value
-                if ($value !== null) {
-                    if ($definition->type === 'enum') {
-                        if (is_array($value)) {
-                            // Handle multiple values for enum
-                            foreach ($value as $optionId) {
-                                SpotlightAttributeValue::create([
-                                    'spotlight_id' => $this->record->id,
-                                    'attribute_definition_id' => $definitionId,
-                                    'attribute_option_id' => $optionId,
-                                ]);
-                            }
-                        } else {
-                            SpotlightAttributeValue::create([
-                                'spotlight_id' => $this->record->id,
-                                'attribute_definition_id' => $definitionId,
-                                'attribute_option_id' => $value,
-                            ]);
-                        }
-                    } else {
-                        // Handle non-enum types
+                // Skip null values
+                if ($value === null) continue;
+                
+                if ($definition->isEnum()) {
+                    // Handle enum types - work with both single and multi-select scenarios
+                    $optionIds = is_array($value) ? $value : [$value];
+                    
+                    // Make sure we're only working with non-empty values
+                    $optionIds = array_filter($optionIds, function($id) {
+                        return !empty($id) && $id !== null;
+                    });
+                    
+                    // Create values for each option ID
+                    foreach ($optionIds as $optionId) {
                         SpotlightAttributeValue::create([
                             'spotlight_id' => $this->record->id,
                             'attribute_definition_id' => $definitionId,
-                            'value' => (string) $value,
+                            'attribute_option_id' => $optionId,
                         ]);
                     }
+                } else {
+                    // Handle non-enum types
+                    SpotlightAttributeValue::create([
+                        'spotlight_id' => $this->record->id,
+                        'attribute_definition_id' => $definitionId,
+                        'value' => (string) $value,
+                    ]);
                 }
             }
         }
