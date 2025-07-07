@@ -43,22 +43,37 @@ class OptionsRelationManager extends RelationManager
                     
                 Forms\Components\Select::make('parent_option_id')
                     ->label('Parent Option')
-                    ->relationship('parentOption', 'value', function ($query, $record) {
-                        // Only show options from the same attribute definition
-                        // Exclude the current option and its children to prevent circular references
+                    ->relationship('parentOption', 'value', function ($query, $record, $livewire) {
+                        // Get the current attribute definition record (the one we're adding options to)
+                        $attributeDefinition = $livewire->getOwnerRecord();
+                        
+                        // Get the parent attribute definition if it exists
+                        $parentAttributeDefinitionId = $attributeDefinition->parent_id;
+                        
+                        if ($parentAttributeDefinitionId) {
+                            // Only show options that belong to the parent attribute definition
+                            $query->where('attribute_definition_id', $parentAttributeDefinitionId);
+                        } else {
+                            // If there's no parent attribute definition, don't show any parent options
+                            // This effectively disables the parent option dropdown
+                            return $query->where('id', 0); // This ensures no options are shown
+                        }
+                        
+                        // Also exclude the current option and its children to prevent circular references
                         if ($record) {
-                            // Get all descendant IDs to avoid circular references
                             $excludeIds = [$record->id];
                             $childIds = $record->getAllChildrenIds();
                             $excludeIds = array_merge($excludeIds, $childIds);
-                            return $query->whereNotIn('id', $excludeIds);
+                            $query->whereNotIn('id', $excludeIds);
                         }
+                        
                         return $query;
                     })
                     ->searchable()
                     ->preload()
                     ->placeholder('No parent (top-level option)')
-                    ->helperText('Select a parent option to create a dependent relationship (e.g., District belongs to Governorate)'),
+                    ->helperText('Select a parent option from the parent attribute definition (e.g., District options can only have Governorate options as parents)')
+                    ->visible(fn ($livewire) => $livewire->getOwnerRecord()->parent_id !== null),
             ]);
     }
 
