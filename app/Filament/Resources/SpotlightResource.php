@@ -318,7 +318,16 @@ class SpotlightResource extends Resource
 
                                         Forms\Components\Select::make('location_id')
                                             ->relationship('location', 'name')
-                                            ->required()
+                                            ->required(fn (Forms\Get $get): bool => 
+                                                // Only required if the category's show_location_filter is true
+                                                $get('category_id') && 
+                                                SpotlightCategory::find($get('category_id'))?->show_location_filter ?? true
+                                            )
+                                            ->visible(fn (Forms\Get $get): bool => 
+                                                // Only visible if the category's show_location_filter is true
+                                                !$get('category_id') || 
+                                                SpotlightCategory::find($get('category_id'))?->show_location_filter ?? true
+                                            )
                                             ->searchable()
                                             ->preload()
                                             ->helperText('Select from existing locations. New locations must be created in the Locations section.'),
