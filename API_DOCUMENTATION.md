@@ -104,11 +104,12 @@ Authorization: Bearer YOUR_JWT_TOKEN
   "password": "password",
   "password_confirmation": "password",
   "mobile": "1234567890",
+  "mobile_country_code": "+971",
   "address": "123 Main St"
 }
 ```
 
-**Note:** Mobile number must be unique across all users.
+**Note:** Mobile number must be unique across all users. The `mobile_country_code` field allows storing the country code separately from the phone number.
 
 **Response:**
 ```json
@@ -213,7 +214,8 @@ Authorization: Bearer YOUR_JWT_TOKEN
   "current_password": "your_current_password",  // Required when changing email or password
   "password": "new_password",
   "password_confirmation": "new_password",
-  "mobile": "+9715123456789",
+  "mobile": "5123456789",
+  "mobile_country_code": "+971",
   "address": "123 Main Street, Dubai, UAE"
 }
 ```

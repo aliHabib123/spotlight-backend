@@ -184,6 +184,7 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:100|unique:users',
             'password' => 'required|string|confirmed|min:6',
             'mobile' => 'nullable|string|max:20|unique:users',
+            'mobile_country_code' => 'nullable|string|max:10',
             'address' => 'nullable|string|max:500',
         ]);
 
@@ -197,6 +198,7 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'mobile' => $request->mobile,
+            'mobile_country_code' => $request->mobile_country_code,
             'address' => $request->address,
         ]);
         
@@ -445,6 +447,7 @@ class AuthController extends Controller
         $rules = [
             'name' => 'required|string|between:2,100',
             'mobile' => 'nullable|string|max:20|unique:users,mobile,'.$user->id,
+            'mobile_country_code' => 'nullable|string|max:10',
             'address' => 'nullable|string|max:500',
         ];
         
@@ -471,6 +474,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'mobile' => $request->mobile,
+            'mobile_country_code' => $request->mobile_country_code,
             'address' => $request->address
         ];
         
