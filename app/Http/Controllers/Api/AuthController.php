@@ -169,7 +169,7 @@ class AuthController extends Controller
             'username' => 'required|string|between:3,50|unique:users',
             'email' => 'required|string|email|max:100|unique:users',
             'password' => 'required|string|confirmed|min:6',
-            'mobile' => 'nullable|string|max:20',
+            'mobile' => 'nullable|string|max:20|unique:users',
             'address' => 'nullable|string|max:500',
         ]);
 
@@ -360,7 +360,7 @@ class AuthController extends Controller
             'name' => 'required|string|between:2,100',
             'email' => 'required|string|email|max:100|unique:users,email,'.$user->id,
             'password' => 'nullable|string|confirmed|min:6',
-            'mobile' => 'nullable|string|max:20',
+            'mobile' => 'nullable|string|max:20|unique:users,mobile,'.$user->id,
             'address' => 'nullable|string|max:500',
         ]);
         
