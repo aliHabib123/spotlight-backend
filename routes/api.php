@@ -44,6 +44,10 @@ Route::prefix('v1/auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('register', [AuthController::class, 'register']);
     
+    // Email verification routes
+    Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verify'])->name('api.verification.verify');
+    Route::post('email/resend', [AuthController::class, 'resendVerificationEmail']);
+    
     // Password reset routes
     Route::post('request-reset-otp', [PasswordResetController::class, 'requestResetOtp']);
     Route::post('verify-reset-otp', [PasswordResetController::class, 'verifyResetOtp']);

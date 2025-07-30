@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Carbon;
+use Illuminate\Auth\Events\Verified;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 class AuthController extends Controller
 {
@@ -128,10 +131,21 @@ class AuthController extends Controller
         ];
         
         // Attempt authentication
-        $token = auth('api')->attempt($credentials);
-        
-        if (!$token) {
+        if (!$token = auth('api')->attempt($credentials)) {
             return $this->errorResponse('Invalid credentials', null, 401);
+        }
+        
+        // Get authenticated user
+        $user = auth('api')->user();
+        
+        // Check if email is verified
+        if ($user->email_verified_at === null) {
+            auth('api')->logout();
+            return $this->errorResponse(
+                'Email not verified. Please verify your email before logging in.',
+                ['email_verification_required' => true],
+                403
+            );
         }
 
         return $this->respondWithToken($token);
@@ -189,12 +203,15 @@ class AuthController extends Controller
         // Assign default role for mobile app users
         $user->assignRole('app user');
         
-        // Login and get token
-        auth('api')->login($user);
-        $token = JWTAuth::fromUser($user);
+        // Send verification email
+        $user->sendEmailVerificationNotification();
         
-        // Return token along with user data
-        return $this->respondWithToken($token, 'User successfully registered', 201);
+        // Return success response without login (user must verify email first)
+        return $this->successResponse(
+            'User successfully registered. Please check your email for a verification link.',
+            ['user' => $user],
+            201
+        );
     }
 
     /**
@@ -212,6 +229,76 @@ class AuthController extends Controller
         auth('api')->logout();
 
         return $this->successResponse('Successfully logged out');
+    }
+
+    /**
+     * Verify email address.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function verify(Request $request): JsonResponse
+    {
+        $user = User::find($request->route('id'));
+
+        if (!$user) {
+            return $this->errorResponse('User not found', null, 404);
+        }
+
+        if (!hash_equals(sha1($user->getEmailForVerification()), $request->route('hash'))) {
+            return $this->errorResponse('Invalid verification link', null, 403);
+        }
+
+        if ($user->email_verified_at !== null) {
+            return $this->successResponse('Email already verified');
+        }
+
+        // Mark email as verified
+        $user->email_verified_at = now();
+        $user->save();
+        
+        // Fire verification event
+        event(new Verified($user));
+
+        // Return simple success message - user will need to manually log in from the app
+        return $this->successResponse(
+            'Email verified successfully. You can now log in to the app.'
+        );
+    }
+    
+    /**
+     * Resend verification email.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function resendVerificationEmail(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'login' => 'required|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->errorResponse('Validation failed', $validator->errors(), 422);
+        }
+
+        // Determine if input is email or username
+        $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        
+        // Find user by email or username
+        $user = User::where($loginType, $request->login)->first();
+
+        if (!$user) {
+            return $this->errorResponse('User not found', null, 404);
+        }
+
+        if ($user->email_verified_at !== null) {
+            return $this->successResponse('Email already verified');
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return $this->successResponse('Verification link sent successfully');
     }
 
     /**

@@ -26,6 +26,8 @@ Mobile applications should use JWT authentication. JWT provides a stateless, tok
 
 **Endpoint:** `POST /api/v1/auth/login`
 
+**Important:** Users must verify their email address before they can log in.
+
 **Request:**
 ```json
 {
@@ -34,7 +36,7 @@ Mobile applications should use JWT authentication. JWT provides a stateless, tok
 }
 ```
 
-**Response:**
+**Response (Success):**
 ```json
 {
   "status": "success",
@@ -47,6 +49,17 @@ Mobile applications should use JWT authentication. JWT provides a stateless, tok
   "permissions": [...]
 }
 ```
+
+**Response (Email Not Verified):**
+```json
+{
+  "status": "error",
+  "message": "Email not verified. Please verify your email before logging in.",
+  "email_verification_required": true
+}
+```
+
+When `email_verification_required` is `true`, the mobile app should prompt the user to check their email or request a new verification email.
 
 **Error Response (401 Unauthorized):**
 ```json
@@ -86,29 +99,64 @@ Authorization: Bearer YOUR_JWT_TOKEN
 ```json
 {
   "name": "John Doe",
+  "username": "johndoe",
   "email": "john@example.com",
   "password": "password",
-  "password_confirmation": "password"
+  "password_confirmation": "password",
+  "mobile": "1234567890",
+  "address": "123 Main St"
 }
 ```
+
+**Note:** Mobile number must be unique across all users.
 
 **Response:**
 ```json
 {
   "status": "success",
-  "message": "User successfully registered",
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "token_type": "bearer",
-  "expires_in": 3600,
+  "message": "User successfully registered. Please check your email for a verification link.",
   "user": {
     "id": 1,
     "name": "John Doe",
+    "username": "johndoe",
     "email": "john@example.com",
-    "created_at": "2023-06-15T12:34:56.000000Z",
-    "updated_at": "2023-06-15T12:34:56.000000Z"
-  },
-  "roles": ["app user"],
-  "permissions": []
+    "mobile": "1234567890",
+    "created_at": "2025-06-15T12:34:56.000000Z",
+    "updated_at": "2025-06-15T12:34:56.000000Z"
+  }
+}
+```
+
+### Email Verification
+
+**Important:** Users must verify their email address before they can log in.
+
+#### Verify Email
+
+**Endpoint:** `GET /api/v1/auth/email/verify/{id}/{hash}`
+
+**Description:** Users receive this link via email after registration. When clicked, it verifies their email address. The link expires after 24 hours.
+
+**Response:** A success message is displayed in the browser. Users can then return to the app and log in.
+
+#### Resend Verification Email
+
+**Endpoint:** `POST /api/v1/auth/email/resend`
+
+**Request:**
+```json
+{
+  "login": "john@example.com"  // Can be email or username
+}
+```
+
+**Note:** The `login` parameter can be either an email address or a username. The system will automatically detect which one it is and find the corresponding user.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Verification link sent successfully"
 }
 ```
 

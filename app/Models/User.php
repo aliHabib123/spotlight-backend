@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
@@ -10,11 +10,44 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
+use App\Notifications\VerifyEmail;
 
-class User extends Authenticatable implements JWTSubject
+class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
+    
+    /**
+     * Check if the user has verified their email address.
+     *
+     * @return bool
+     */
+    public function hasVerifiedEmail()
+    {
+        return ! is_null($this->email_verified_at);
+    }
+    
+    /**
+     * Mark the given user's email as verified.
+     *
+     * @return bool
+     */
+    public function markEmailAsVerified()
+    {
+        return $this->forceFill([
+            'email_verified_at' => $this->freshTimestamp(),
+        ])->save();
+    }
+    
+    /**
+     * Get the email address that should be used for verification.
+     *
+     * @return string
+     */
+    public function getEmailForVerification()
+    {
+        return $this->email;
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -99,7 +132,18 @@ class User extends Authenticatable implements JWTSubject
             'email' => $this->email,
             'username' => $this->username,
             'roles' => $this->getRoleNames(),
-            'permissions' => $this->getAllPermissions()->pluck('name')
+            'permissions' => $this->getAllPermissions()->pluck('name'),
+            'email_verified' => !is_null($this->email_verified_at)
         ];
+    }
+    
+    /**
+     * Send the email verification notification.
+     *
+     * @return void
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new VerifyEmail);
     }
 }
