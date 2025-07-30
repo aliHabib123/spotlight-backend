@@ -234,10 +234,10 @@ class AuthController extends Controller
     /**
      * Verify email address.
      *
-     * @param Request $request
-     * @return JsonResponse
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Contracts\View\View
      */
-    public function verify(Request $request): JsonResponse
+    public function verify(Request $request)
     {
         $user = User::find($request->route('id'));
 
@@ -260,10 +260,8 @@ class AuthController extends Controller
         // Fire verification event
         event(new Verified($user));
 
-        // Return simple success message - user will need to manually log in from the app
-        return $this->successResponse(
-            'Email verified successfully. You can now log in to the app.'
-        );
+        // Return a nice HTML success page instead of JSON
+        return view('auth.verification-success');
     }
     
     /**
