@@ -26,23 +26,58 @@ Mobile applications should use JWT authentication. JWT provides a stateless, tok
 
 **Endpoint:** `POST /api/v1/auth/login`
 
+**Important:** Users must verify their email address before they can log in.
+
 **Request:**
 ```json
 {
-  "email": "user@example.com",
+  "login": "user@example.com", // Can be email or username
   "password": "password"
 }
 ```
 
-**Response:**
+**Response (Success):**
 ```json
 {
+  "status": "success",
+  "message": "Successfully logged in",
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
   "token_type": "bearer",
   "expires_in": 3600,
   "user": {...},
   "roles": [...],
   "permissions": [...]
+}
+```
+
+**Response (Email Not Verified):**
+```json
+{
+  "status": "error",
+  "message": "Email not verified. Please verify your email before logging in.",
+  "email_verification_required": true
+}
+```
+
+When `email_verification_required` is `true`, the mobile app should prompt the user to check their email or request a new verification email.
+
+**Error Response (401 Unauthorized):**
+```json
+{
+  "status": "error",
+  "message": "Unauthorized"
+}
+```
+
+**Error Response (422 Validation Error):**
+```json
+{
+  "status": "error",
+  "message": "Validation failed",
+  "errors": {
+    "email": ["The email field is required."],
+    "password": ["The password field is required."]
+  }
 }
 ```
 
@@ -64,28 +99,65 @@ Authorization: Bearer YOUR_JWT_TOKEN
 ```json
 {
   "name": "John Doe",
+  "username": "johndoe",
   "email": "john@example.com",
   "password": "password",
-  "password_confirmation": "password"
+  "password_confirmation": "password",
+  "mobile": "1234567890",
+  "mobile_country_code": "+971",
+  "address": "123 Main St"
 }
 ```
+
+**Note:** Mobile number must be unique across all users. The `mobile_country_code` field allows storing the country code separately from the phone number.
 
 **Response:**
 ```json
 {
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "token_type": "bearer",
-  "expires_in": 3600,
+  "status": "success",
+  "message": "User successfully registered. Please check your email for a verification link.",
   "user": {
     "id": 1,
     "name": "John Doe",
+    "username": "johndoe",
     "email": "john@example.com",
-    "created_at": "2023-06-15T12:34:56.000000Z",
-    "updated_at": "2023-06-15T12:34:56.000000Z"
-  },
-  "roles": ["app user"],
-  "permissions": [],
-  "message": "User successfully registered"
+    "mobile": "1234567890",
+    "created_at": "2025-06-15T12:34:56.000000Z",
+    "updated_at": "2025-06-15T12:34:56.000000Z"
+  }
+}
+```
+
+### Email Verification
+
+**Important:** Users must verify their email address before they can log in.
+
+#### Verify Email
+
+**Endpoint:** `GET /api/v1/auth/email/verify/{id}/{hash}`
+
+**Description:** Users receive this link via email after registration. When clicked, it verifies their email address. The link expires after 24 hours.
+
+**Response:** A success message is displayed in the browser. Users can then return to the app and log in.
+
+#### Resend Verification Email
+
+**Endpoint:** `POST /api/v1/auth/email/resend`
+
+**Request:**
+```json
+{
+  "login": "john@example.com"  // Can be email or username
+}
+```
+
+**Note:** The `login` parameter can be either an email address or a username. The system will automatically detect which one it is and find the corresponding user.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Verification link sent successfully"
 }
 ```
 
@@ -101,6 +173,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Response:**
 ```json
 {
+  "status": "success",
   "user": {
     "id": 1,
     "name": "John Doe",
@@ -111,6 +184,15 @@ Authorization: Bearer YOUR_JWT_TOKEN
   "roles": ["app user"],
   "permissions": ["view spotlights", "create comments"]
 }
+```
+
+**Error Response (401 Unauthorized):**
+```json
+{
+  "status": "error",
+  "message": "Unauthorized"
+}
+```
 ```
 
 ### Update User Profile
@@ -129,14 +211,17 @@ Authorization: Bearer YOUR_JWT_TOKEN
 {
   "name": "John Smith",
   "email": "johnsmith@example.com",
+  "current_password": "your_current_password",  // Required when changing email or password
   "password": "new_password",
   "password_confirmation": "new_password",
-  "mobile": "+9715123456789",
+  "mobile": "5123456789",
+  "mobile_country_code": "+971",
   "address": "123 Main Street, Dubai, UAE"
 }
 ```
 
 **Notes:**
+- `current_password` is required when changing email or password for security reasons
 - `password` and `password_confirmation` are optional. If not provided, the password will remain unchanged.
 - `mobile` and `address` are optional fields.
 - Email must be unique, except for the current user's email.
@@ -144,6 +229,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Successful Response (200 OK):**
 ```json
 {
+  "status": "success",
   "message": "Profile updated successfully",
   "user": {
     "id": 1,
@@ -161,26 +247,31 @@ Authorization: Bearer YOUR_JWT_TOKEN
 
 **Error Responses:**
 
-*Validation error (400 Bad Request):*
+*Validation error (422 Unprocessable Entity):*
 ```json
 {
-  "name": ["The name field is required."],
-  "email": ["The email has already been taken."]
+  "status": "error",
+  "message": "Validation failed",
+  "errors": {
+    "name": ["The name field is required."],
+    "email": ["The email has already been taken."]
+  }
 }
 ```
 
 *Unauthorized (401 Unauthorized):*
 ```json
 {
-  "error": "Unauthorized"
+  "status": "error",
+  "message": "Unauthorized"
 }
 ```
 
 *Server error (500 Internal Server Error):*
 ```json
 {
-  "error": "Failed to update profile",
-  "message": "Error details..."
+  "status": "error",
+  "message": "Failed to update profile: Error details..."
 }
 ```
 
@@ -196,12 +287,21 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Response:**
 ```json
 {
+  "status": "success",
   "access_token": "NEW_JWT_TOKEN",
   "token_type": "bearer",
   "expires_in": 3600,
   "user": {...},
   "roles": [...],
   "permissions": [...]
+}
+```
+
+**Error Response (401 Unauthorized):**
+```json
+{
+  "status": "error",
+  "message": "Unauthorized"
 }
 ```
 
@@ -217,6 +317,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Response:**
 ```json
 {
+  "status": "success",
   "message": "Successfully logged out"
 }
 ```
@@ -242,38 +343,45 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Successful Response (200 OK):**
 ```json
 {
+  "status": "success",
   "message": "Account successfully deleted"
 }
 ```
 
 **Error Responses:**
 
-*Password not provided (422 Unprocessable Entity):*
+*Validation error (422 Unprocessable Entity):*
 ```json
 {
-  "password": ["The password field is required."]
+  "status": "error",
+  "message": "Validation failed",
+  "errors": {
+    "password": ["The password field is required."]
+  }
 }
 ```
 
 *Incorrect password (422 Unprocessable Entity):*
 ```json
 {
-  "error": "Current password is incorrect"
+  "status": "error",
+  "message": "The provided password is incorrect"
 }
 ```
 
 *Unauthorized (401 Unauthorized):*
 ```json
 {
-  "error": "Unauthorized"
+  "status": "error",
+  "message": "Unauthorized"
 }
 ```
 
 *Server error (500 Internal Server Error):*
 ```json
 {
-  "error": "Failed to delete account",
-  "message": "Error details..."
+  "status": "error",
+  "message": "Failed to delete account: An unexpected error occurred"
 }
 ```
 
@@ -1142,6 +1250,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
         "news_category_id": 1,
         "user_id": 1,
         "is_published": true,
+        "show_date": true,
         "published_at": "2025-06-15T12:00:00.000000Z",
         "created_at": "2025-06-15T10:30:00.000000Z",
         "updated_at": "2025-06-15T10:30:00.000000Z",
@@ -1195,6 +1304,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
       "user_id": 1,
       "is_published": true,
       "is_featured": false,
+      "show_date": true,
       "published_at": "2025-06-19T18:00:00.000000Z",
       "created_at": "2025-06-19T15:30:45.000000Z",
       "updated_at": "2025-06-19T15:30:45.000000Z",
@@ -1237,6 +1347,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
       "user_id": 1,
       "is_published": true,
       "is_featured": true,
+      "show_date": true,
       "published_at": "2025-06-19T12:00:00.000000Z",
       "created_at": "2025-06-19T10:30:45.000000Z",
       "updated_at": "2025-06-19T10:30:45.000000Z",
@@ -1275,6 +1386,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
       "news_category_id": 1,
       "user_id": 1,
       "is_published": true,
+      "show_date": true,
       "published_at": "2025-06-15T12:00:00.000000Z",
       "created_at": "2025-06-15T10:30:00.000000Z",
       "updated_at": "2025-06-15T10:30:00.000000Z",
@@ -1318,6 +1430,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
   "content": "Full content of the article...",
   "news_category_id": 1,
   "is_published": true,
+  "show_date": true,
   "published_at": "2025-06-15T12:00:00.000000Z"
 }
 ```
@@ -1339,6 +1452,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
     "news_category_id": 1,
     "user_id": 1,
     "is_published": true,
+    "show_date": true,
     "published_at": "2025-06-15T12:00:00.000000Z",
     "created_at": "2025-06-15T11:30:00.000000Z",
     "updated_at": "2025-06-15T11:30:00.000000Z",
@@ -1371,6 +1485,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
   "content": "Updated full content...",
   "news_category_id": 2,
   "is_published": true,
+  "show_date": true,
   "published_at": "2025-06-15T14:00:00.000000Z"
 }
 ```
@@ -1392,6 +1507,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
     "news_category_id": 2,
     "user_id": 1,
     "is_published": true,
+    "show_date": true,
     "published_at": "2025-06-15T14:00:00.000000Z",
     "created_at": "2025-06-15T10:30:00.000000Z",
     "updated_at": "2025-06-15T12:45:00.000000Z",

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SavedSpotlightController;
 use App\Http\Controllers\Api\ShippingAddressController;
@@ -42,6 +43,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::prefix('v1/auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('register', [AuthController::class, 'register']);
+    
+    // Email verification routes
+    Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verify'])->name('api.verification.verify');
+    Route::post('email/resend', [AuthController::class, 'resendVerificationEmail']);
+    
+    // Password reset routes
+    Route::post('request-reset-otp', [PasswordResetController::class, 'requestResetOtp']);
+    Route::post('verify-reset-otp', [PasswordResetController::class, 'verifyResetOtp']);
+    Route::post('reset-password', [PasswordResetController::class, 'resetPassword']);
 
     // Protected JWT routes
     Route::middleware([\App\Http\Middleware\JsonApiAuthentication::class . ':api'])->group(function () {

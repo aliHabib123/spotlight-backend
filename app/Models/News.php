@@ -34,6 +34,7 @@ class News extends Model
         'is_published',
         'is_featured',
         'published_at',
+        'show_date',
     ];
 
     /**
@@ -45,6 +46,7 @@ class News extends Model
         'is_published' => 'boolean',
         'is_featured' => 'boolean',
         'published_at' => 'datetime',
+        'show_date' => 'boolean',
     ];
 
     /**

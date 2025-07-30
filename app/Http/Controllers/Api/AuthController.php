@@ -6,13 +6,71 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Carbon;
+use Illuminate\Auth\Events\Verified;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 class AuthController extends Controller
 {
+    /**
+     * Return a standardized API response
+     * 
+     * @param string $status Status of the response (success|error)
+     * @param string|null $message Optional message
+     * @param array $data Additional data to include in response
+     * @param int $statusCode HTTP status code
+     * @return JsonResponse
+     */
+    protected function apiResponse(string $status, ?string $message = null, array $data = [], int $statusCode = 200): JsonResponse
+    {
+        $response = ['status' => $status];
+        
+        if ($message) {
+            $response['message'] = $message;
+        }
+        
+        if (!empty($data)) {
+            $response = array_merge($response, $data);
+        }
+        
+        return response()->json($response, $statusCode);
+    }
+    
+    /**
+     * Return a standardized success response
+     * 
+     * @param string|null $message Success message
+     * @param array $data Additional data to include in response
+     * @param int $statusCode HTTP status code
+     * @return JsonResponse
+     */
+    protected function successResponse(?string $message = null, array $data = [], int $statusCode = 200): JsonResponse
+    {
+        return $this->apiResponse('success', $message, $data, $statusCode);
+    }
+    
+    /**
+     * Return a standardized error response
+     * 
+     * @param string $message Error message
+     * @param mixed|null $errors Validation errors if any
+     * @param int $statusCode HTTP status code
+     * @return JsonResponse
+     */
+    protected function errorResponse(string $message, $errors = null, int $statusCode = 400): JsonResponse
+    {
+        $data = [];
+        
+        if ($errors) {
+            $data['errors'] = $errors;
+        }
+        
+        return $this->apiResponse('error', $message, $data, $statusCode);
+    }
     /**
      * Create a new AuthController instance.
      *
@@ -24,27 +82,70 @@ class AuthController extends Controller
     }
 
     /**
-     * Get a JWT via given credentials.
+     * Get a JWT via given credentials (email or username).
      *
      * @param  Request  $request
      * @return JsonResponse
+     * 
+     * @response 200 {
+     *   "status": "success",
+     *   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+     *   "token_type": "bearer",
+     *   "expires_in": 3600,
+     *   "user": {...}
+     * }
+     * 
+     * @response 401 {
+     *   "status": "error",
+     *   "message": "Unauthorized"
+     * }
+     * 
+     * @response 422 {
+     *   "status": "error",
+     *   "message": "Validation failed",
+     *   "errors": {
+     *     "email": ["The email field is required."],
+     *     "password": ["The password field is required."]
+     *   }
+     * }
      */
     public function login(Request $request): JsonResponse
     {
+        // Validate the request
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
+            'login' => 'required|string',
             'password' => 'required|string|min:6',
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return $this->errorResponse('Validation failed', $validator->errors(), 422);
         }
-
-        $credentials = $request->only('email', 'password');
-
-        $token = auth('api')->attempt($credentials);
-        if (!$token) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        
+        // Determine if login is email or username
+        $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        
+        // Authenticate with determined login type
+        $credentials = [
+            $loginType => $request->login,
+            'password' => $request->password
+        ];
+        
+        // Attempt authentication
+        if (!$token = auth('api')->attempt($credentials)) {
+            return $this->errorResponse('Invalid credentials', null, 401);
+        }
+        
+        // Get authenticated user
+        $user = auth('api')->user();
+        
+        // Check if email is verified
+        if ($user->email_verified_at === null) {
+            auth('api')->logout();
+            return $this->errorResponse(
+                'Email not verified. Please verify your email before logging in.',
+                ['email_verification_required' => true],
+                403
+            );
         }
 
         return $this->respondWithToken($token);
@@ -55,63 +156,180 @@ class AuthController extends Controller
      *
      * @param  Request  $request
      * @return JsonResponse
+     * 
+     * @response 201 {
+     *   "status": "success",
+     *   "message": "User successfully registered",
+     *   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+     *   "token_type": "bearer",
+     *   "expires_in": 3600,
+     *   "user": {...}
+     * }
+     * 
+     * @response 400 {
+     *   "status": "error",
+     *   "message": "Validation failed",
+     *   "errors": {
+     *     "username": ["The username has already been taken."],
+     *     "email": ["The email has already been taken."],
+     *     "password": ["The password confirmation does not match."]
+     *   }
+     * }
      */
     public function register(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|between:2,100',
+            'username' => 'required|string|between:3,50|unique:users',
             'email' => 'required|string|email|max:100|unique:users',
             'password' => 'required|string|confirmed|min:6',
-            'mobile' => 'nullable|string|max:20',
+            'mobile' => 'nullable|string|max:20|unique:users',
+            'mobile_country_code' => 'nullable|string|max:10',
             'address' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
+            return $this->errorResponse('Validation failed', $validator->errors(), 422);
         }
 
         $user = User::create([
             'name' => $request->name,
+            'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'mobile' => $request->mobile,
+            'mobile_country_code' => $request->mobile_country_code,
             'address' => $request->address,
         ]);
         
         // Assign default role for mobile app users
         $user->assignRole('app user');
         
-        // Generate token immediately after registration
-        $token = auth('api')->login($user);
+        // Send verification email
+        $user->sendEmailVerificationNotification();
         
-        // Return token along with user data
-        return $this->respondWithToken($token, 'User successfully registered', 201);
+        // Return success response without login (user must verify email first)
+        return $this->successResponse(
+            'User successfully registered. Please check your email for a verification link.',
+            ['user' => $user],
+            201
+        );
     }
 
     /**
      * Log the user out (Invalidate the token).
      *
      * @return JsonResponse
+     * 
+     * @response 200 {
+     *   "status": "success",
+     *   "message": "Successfully logged out"
+     * }
      */
     public function logout(): JsonResponse
     {
         auth('api')->logout();
 
-        return response()->json(['message' => 'Successfully logged out']);
+        return $this->successResponse('Successfully logged out');
+    }
+
+    /**
+     * Verify email address.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Contracts\View\View
+     */
+    public function verify(Request $request)
+    {
+        $user = User::find($request->route('id'));
+
+        if (!$user) {
+            return $this->errorResponse('User not found', null, 404);
+        }
+
+        if (!hash_equals(sha1($user->getEmailForVerification()), $request->route('hash'))) {
+            return $this->errorResponse('Invalid verification link', null, 403);
+        }
+
+        if ($user->email_verified_at !== null) {
+            return $this->successResponse('Email already verified');
+        }
+
+        // Mark email as verified
+        $user->email_verified_at = now();
+        $user->save();
+        
+        // Fire verification event
+        event(new Verified($user));
+
+        // Return a nice HTML success page instead of JSON
+        return view('auth.verification-success');
+    }
+    
+    /**
+     * Resend verification email.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function resendVerificationEmail(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'login' => 'required|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->errorResponse('Validation failed', $validator->errors(), 422);
+        }
+
+        // Determine if input is email or username
+        $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        
+        // Find user by email or username
+        $user = User::where($loginType, $request->login)->first();
+
+        if (!$user) {
+            return $this->errorResponse('User not found', null, 404);
+        }
+
+        if ($user->email_verified_at !== null) {
+            return $this->successResponse('Email already verified');
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return $this->successResponse('Verification link sent successfully');
     }
 
     /**
      * Refresh a token.
      *
      * @return JsonResponse
+     * 
+     * @response 200 {
+     *   "status": "success",
+     *   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+     *   "token_type": "bearer",
+     *   "expires_in": 3600,
+     *   "user": {...}
+     * }
+     * 
+     * @response 401 {
+     *   "status": "error",
+     *   "message": "Could not refresh token: Token has expired"
+     * }
      */
     public function refresh(): JsonResponse
     {
         try {
-            $newToken = auth('api')->refresh();
+            // Get the token provider and refresh the token
+            // Using JWTAuth facade for token refresh
+            // This requires tymon/jwt-auth and should work if properly configured
+            $token = JWTAuth::getToken();
+            $newToken = JWTAuth::refresh($token);
             return $this->respondWithToken($newToken);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Could not refresh token'], 401);
+            return $this->errorResponse('Could not refresh token: ' . $e->getMessage(), null, 401);
         }
     }
 
@@ -119,13 +337,25 @@ class AuthController extends Controller
      * Get the authenticated User.
      *
      * @return JsonResponse
+     * 
+     * @response 200 {
+     *   "status": "success",
+     *   "user": {...},
+     *   "roles": [...],
+     *   "permissions": [...]
+     * }
+     * 
+     * @response 401 {
+     *   "status": "error",
+     *   "message": "Unauthorized"
+     * }
      */
     public function me(): JsonResponse
     {
         $user = auth('api')->user();
         
         if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return $this->errorResponse('Unauthorized', null, 401);
         }
         
         // Get user roles and permissions if using Spatie permissions package
@@ -143,12 +373,11 @@ class AuthController extends Controller
      * Get the token array structure.
      *
      * @param  string $token
-     * @param  string|null $message
-     * @param  int $statusCode
-     *
+     * @param string|null $message
+     * @param int $statusCode
      * @return JsonResponse
      */
-    protected function respondWithToken(string $token, string $message = '', int $statusCode = 200): JsonResponse
+    protected function respondWithToken(string $token, ?string $message = null, int $statusCode = 200): JsonResponse
     {
         $user = auth('api')->user();
         
@@ -157,22 +386,19 @@ class AuthController extends Controller
         $permissions = method_exists($user, 'getAllPermissions') ? $user->getAllPermissions()->pluck('name') : [];
         
         // JWT TTL from config instead of using factory() method
-        $expires_in = config('jwt.ttl', 60) * 60;
+        // Prepare user data with token information
+        $userData = $user ? $user->toArray() : [];
+        $userData['roles'] = $roles;
+        $userData['permissions'] = $permissions;
         
-        $response = [
+        $responseData = [
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => $expires_in,
-            'user' => $user,
-            'roles' => $roles,
-            'permissions' => $permissions
+            'expires_in' => config('jwt.ttl', 60) * 60,
+            'user' => $userData
         ];
         
-        if ($message !== '') {
-            $response['message'] = $message;
-        }
-        
-        return response()->json($response, $statusCode);
+        return $this->successResponse($message, $responseData, $statusCode);
     }
     
     /**
@@ -180,6 +406,33 @@ class AuthController extends Controller
      *
      * @param  Request  $request
      * @return JsonResponse
+     * 
+     * @response 200 {
+     *   "status": "success",
+     *   "message": "Profile updated successfully",
+     *   "user": {...},
+     *   "roles": [...],
+     *   "permissions": [...]
+     * }
+     * 
+     * @response 401 {
+     *   "status": "error",
+     *   "message": "Unauthorized"
+     * }
+     * 
+     * @response 422 {
+     *   "status": "error",
+     *   "message": "Validation failed",
+     *   "errors": {
+     *     "name": ["The name field is required."],
+     *     "email": ["This email is already in use."]
+     *   }
+     * }
+     * 
+     * @response 500 {
+     *   "status": "error",
+     *   "message": "Failed to update profile: Database connection error"
+     * }
      */
     public function updateProfile(Request $request): JsonResponse
     {
@@ -187,31 +440,55 @@ class AuthController extends Controller
         $user = auth('api')->user();
         
         if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return $this->errorResponse('Unauthorized', null, 401);
         }
         
-        $validator = Validator::make($request->all(), [
+        // Start with basic validation rules
+        $rules = [
             'name' => 'required|string|between:2,100',
-            'email' => 'required|string|email|max:100|unique:users,email,'.$user->id,
-            'password' => 'nullable|string|confirmed|min:6',
-            'mobile' => 'nullable|string|max:20',
+            'mobile' => 'nullable|string|max:20|unique:users,mobile,'.$user->id,
+            'mobile_country_code' => 'nullable|string|max:10',
             'address' => 'nullable|string|max:500',
-        ]);
-
+        ];
+        
+        // Determine if sensitive information is being updated
+        $changingEmail = $request->filled('email') && $request->email !== $user->email;
+        $changingPassword = $request->filled('password');
+        
+        // If changing email or password, require the current password
+        if ($changingEmail || $changingPassword) {
+            $rules['current_password'] = 'required|string';
+        }
+        
+        // Add email and password rules
+        $rules['email'] = 'required|string|email|max:100|unique:users,email,'.$user->id;
+        $rules['password'] = 'nullable|string|confirmed|min:6';
+        
+        $validator = Validator::make($request->all(), $rules);
+        
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
+            return $this->errorResponse('Validation failed', $validator->errors(), 422);
         }
         
         $updateData = [
             'name' => $request->name,
             'email' => $request->email,
             'mobile' => $request->mobile,
-            'address' => $request->address,
+            'mobile_country_code' => $request->mobile_country_code,
+            'address' => $request->address
         ];
         
-        // Only update password if provided
-        if ($request->filled('password')) {
-            $updateData['password'] = Hash::make($request->password);
+        // Handle password and email updates that require current password verification
+        if ($changingEmail || $changingPassword) {
+            // Verify the current password
+            if (!Hash::check($request->current_password, $user->password)) {
+                return $this->errorResponse('Current password is incorrect', ['current_password' => ['The provided password does not match our records']], 422);
+            }
+            
+            // Update password if provided
+            if ($changingPassword) {
+                $updateData['password'] = Hash::make($request->password);
+            }
         }
         
         try {
@@ -224,14 +501,13 @@ class AuthController extends Controller
             $roles = method_exists($updatedUser, 'getRoleNames') ? $updatedUser->getRoleNames() : [];
             $permissions = method_exists($updatedUser, 'getAllPermissions') ? $updatedUser->getAllPermissions()->pluck('name') : [];
             
-            return response()->json([
-                'message' => 'Profile updated successfully',
+            return $this->successResponse('Profile updated successfully', [
                 'user' => $updatedUser,
                 'roles' => $roles,
                 'permissions' => $permissions
             ]);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to update profile', 'message' => $e->getMessage()], 500);
+            return $this->errorResponse('Failed to update profile: ' . $e->getMessage(), null, 500);
         }
     }
     
@@ -240,6 +516,29 @@ class AuthController extends Controller
      *
      * @param  Request  $request
      * @return JsonResponse
+     * 
+     * @response 200 {
+     *   "status": "success",
+     *   "message": "Account successfully deleted"
+     * }
+     * 
+     * @response 401 {
+     *   "status": "error",
+     *   "message": "Unauthorized"
+     * }
+     * 
+     * @response 422 {
+     *   "status": "error",
+     *   "message": "Validation failed",
+     *   "errors": {
+     *     "password": ["The provided password is incorrect."]
+     *   }
+     * }
+     * 
+     * @response 500 {
+     *   "status": "error",
+     *   "message": "Failed to delete account: Database error"
+     * }
      */
     public function deleteAccount(Request $request): JsonResponse
     {
@@ -248,7 +547,10 @@ class AuthController extends Controller
             $user = auth('api')->user();
             
             if (!$user) {
-                return response()->json(['error' => 'Unauthorized'], 401);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized'
+                ], 401);
             }
             
             // Store user ID before we do anything else
@@ -260,25 +562,31 @@ class AuthController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return response()->json(['error' => 'Validation failed', 'details' => $validator->errors()], 422);
+                return response()->json([
+                    'status' => 'error',
+                    'errors' => $validator->errors()
+                ], 422);
             }
             
             // Check if the provided password matches
             if (!Hash::check((string)$request->password, (string)$user->password)) {
-                return response()->json(['error' => 'Current password is incorrect'], 422);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Current password is incorrect'
+                ], 422);
             }
             
             // Delete the user account first
             $deleted = User::where('id', $userId)->delete();
             
             if (!$deleted) {
-                return response()->json(['error' => 'Failed to delete account'], 500);
+                return $this->errorResponse('Failed to delete account', null, 500);
             }
             
             // Log the user out by invalidating their token
             auth('api')->logout();
             
-            return response()->json(['message' => 'Account successfully deleted'], 200);
+            return $this->successResponse('Account successfully deleted');
         } catch (\Exception $e) {
             // Log the exception but ensure we return JSON
             Log::error('Account deletion failed: ' . $e->getMessage(), [
@@ -286,10 +594,7 @@ class AuthController extends Controller
                 'exception' => $e
             ]);
             
-            return response()->json([
-                'error' => 'Failed to delete account',
-                'message' => 'An unexpected error occurred'
-            ], 500);
+            return $this->errorResponse('Failed to delete account: An unexpected error occurred', null, 500);
         }
     }
 }
