@@ -210,6 +210,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 {
   "name": "John Smith",
   "email": "johnsmith@example.com",
+  "current_password": "your_current_password",  // Required when changing email or password
   "password": "new_password",
   "password_confirmation": "new_password",
   "mobile": "+9715123456789",
@@ -218,6 +219,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 ```
 
 **Notes:**
+- `current_password` is required when changing email or password for security reasons
 - `password` and `password_confirmation` are optional. If not provided, the password will remain unchanged.
 - `mobile` and `address` are optional fields.
 - Email must be unique, except for the current user's email.

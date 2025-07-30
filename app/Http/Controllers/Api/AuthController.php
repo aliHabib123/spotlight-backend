@@ -441,13 +441,27 @@ class AuthController extends Controller
             return $this->errorResponse('Unauthorized', null, 401);
         }
         
-        $validator = Validator::make($request->all(), [
+        // Start with basic validation rules
+        $rules = [
             'name' => 'required|string|between:2,100',
-            'email' => 'required|string|email|max:100|unique:users,email,'.$user->id,
-            'password' => 'nullable|string|confirmed|min:6',
             'mobile' => 'nullable|string|max:20|unique:users,mobile,'.$user->id,
             'address' => 'nullable|string|max:500',
-        ]);
+        ];
+        
+        // Determine if sensitive information is being updated
+        $changingEmail = $request->filled('email') && $request->email !== $user->email;
+        $changingPassword = $request->filled('password');
+        
+        // If changing email or password, require the current password
+        if ($changingEmail || $changingPassword) {
+            $rules['current_password'] = 'required|string';
+        }
+        
+        // Add email and password rules
+        $rules['email'] = 'required|string|email|max:100|unique:users,email,'.$user->id;
+        $rules['password'] = 'nullable|string|confirmed|min:6';
+        
+        $validator = Validator::make($request->all(), $rules);
         
         if ($validator->fails()) {
             return $this->errorResponse('Validation failed', $validator->errors(), 422);
@@ -460,9 +474,17 @@ class AuthController extends Controller
             'address' => $request->address
         ];
         
-        // Only update password if provided
-        if ($request->filled('password')) {
-            $updateData['password'] = Hash::make($request->password);
+        // Handle password and email updates that require current password verification
+        if ($changingEmail || $changingPassword) {
+            // Verify the current password
+            if (!Hash::check($request->current_password, $user->password)) {
+                return $this->errorResponse('Current password is incorrect', ['current_password' => ['The provided password does not match our records']], 422);
+            }
+            
+            // Update password if provided
+            if ($changingPassword) {
+                $updateData['password'] = Hash::make($request->password);
+            }
         }
         
         try {
