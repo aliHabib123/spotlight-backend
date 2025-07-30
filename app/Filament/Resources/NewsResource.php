@@ -79,6 +79,10 @@ class NewsResource extends Resource
                             ->label('Published')
                             ->default(false),
                             
+                        Forms\Components\Toggle::make('show_date')
+                            ->label('Show Date')
+                            ->default(true),
+                            
                         Forms\Components\DateTimePicker::make('published_at')
                             ->label('Publish Date')
                             ->default(now())

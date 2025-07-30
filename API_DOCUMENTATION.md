@@ -1198,6 +1198,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
         "news_category_id": 1,
         "user_id": 1,
         "is_published": true,
+        "show_date": true,
         "published_at": "2025-06-15T12:00:00.000000Z",
         "created_at": "2025-06-15T10:30:00.000000Z",
         "updated_at": "2025-06-15T10:30:00.000000Z",
@@ -1251,6 +1252,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
       "user_id": 1,
       "is_published": true,
       "is_featured": false,
+      "show_date": true,
       "published_at": "2025-06-19T18:00:00.000000Z",
       "created_at": "2025-06-19T15:30:45.000000Z",
       "updated_at": "2025-06-19T15:30:45.000000Z",
@@ -1293,6 +1295,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
       "user_id": 1,
       "is_published": true,
       "is_featured": true,
+      "show_date": true,
       "published_at": "2025-06-19T12:00:00.000000Z",
       "created_at": "2025-06-19T10:30:45.000000Z",
       "updated_at": "2025-06-19T10:30:45.000000Z",
@@ -1331,6 +1334,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
       "news_category_id": 1,
       "user_id": 1,
       "is_published": true,
+      "show_date": true,
       "published_at": "2025-06-15T12:00:00.000000Z",
       "created_at": "2025-06-15T10:30:00.000000Z",
       "updated_at": "2025-06-15T10:30:00.000000Z",
@@ -1374,6 +1378,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
   "content": "Full content of the article...",
   "news_category_id": 1,
   "is_published": true,
+  "show_date": true,
   "published_at": "2025-06-15T12:00:00.000000Z"
 }
 ```
@@ -1395,6 +1400,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
     "news_category_id": 1,
     "user_id": 1,
     "is_published": true,
+    "show_date": true,
     "published_at": "2025-06-15T12:00:00.000000Z",
     "created_at": "2025-06-15T11:30:00.000000Z",
     "updated_at": "2025-06-15T11:30:00.000000Z",
@@ -1427,6 +1433,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
   "content": "Updated full content...",
   "news_category_id": 2,
   "is_published": true,
+  "show_date": true,
   "published_at": "2025-06-15T14:00:00.000000Z"
 }
 ```
@@ -1448,6 +1455,7 @@ Many API responses are cached for improved performance. Cache invalidation happe
     "news_category_id": 2,
     "user_id": 1,
     "is_published": true,
+    "show_date": true,
     "published_at": "2025-06-15T14:00:00.000000Z",
     "created_at": "2025-06-15T10:30:00.000000Z",
     "updated_at": "2025-06-15T12:45:00.000000Z",

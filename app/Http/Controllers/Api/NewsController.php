@@ -84,6 +84,7 @@ class NewsController extends Controller
             'featured_image' => 'nullable|image|max:2048', // 2MB max
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
+            'show_date' => 'boolean',
         ]);
         
         if ($validator->fails()) {
@@ -105,12 +106,13 @@ class NewsController extends Controller
             'title' => $request->title,
             'slug' => Str::slug($request->title),
             'summary' => $request->summary,
-            'content' => $request->content,
+            'content' => $request->input('content'),
             'news_category_id' => $request->news_category_id,
             'user_id' => auth('api')->id(),
             'featured_image' => $featuredImagePath,
             'is_published' => $request->is_published ?? false,
             'published_at' => $request->is_published ? ($request->published_at ?? now()) : null,
+            'show_date' => $request->has('show_date') ? $request->show_date : true,
         ]);
         
         return response()->json([
@@ -208,6 +210,7 @@ class NewsController extends Controller
             'featured_image' => 'nullable|image|max:2048', // 2MB max
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
+            'show_date' => 'boolean',
         ]);
         
         if ($validator->fails()) {
@@ -240,7 +243,7 @@ class NewsController extends Controller
         }
         
         if ($request->has('content')) {
-            $news->content = $request->content;
+            $news->content = $request->input('content');
         }
         
         if ($request->has('news_category_id')) {
@@ -258,6 +261,10 @@ class NewsController extends Controller
         
         if ($request->has('published_at') && $news->is_published) {
             $news->published_at = $request->published_at;
+        }
+        
+        if ($request->has('show_date')) {
+            $news->show_date = $request->show_date;
         }
         
         $news->save();
