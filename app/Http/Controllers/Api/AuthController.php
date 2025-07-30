@@ -6,13 +6,68 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
+    /**
+     * Return a standardized API response
+     * 
+     * @param string $status Status of the response (success|error)
+     * @param string|null $message Optional message
+     * @param array $data Additional data to include in response
+     * @param int $statusCode HTTP status code
+     * @return JsonResponse
+     */
+    protected function apiResponse(string $status, ?string $message = null, array $data = [], int $statusCode = 200): JsonResponse
+    {
+        $response = ['status' => $status];
+        
+        if ($message) {
+            $response['message'] = $message;
+        }
+        
+        if (!empty($data)) {
+            $response = array_merge($response, $data);
+        }
+        
+        return response()->json($response, $statusCode);
+    }
+    
+    /**
+     * Return a standardized success response
+     * 
+     * @param string|null $message Success message
+     * @param array $data Additional data to include in response
+     * @param int $statusCode HTTP status code
+     * @return JsonResponse
+     */
+    protected function successResponse(?string $message = null, array $data = [], int $statusCode = 200): JsonResponse
+    {
+        return $this->apiResponse('success', $message, $data, $statusCode);
+    }
+    
+    /**
+     * Return a standardized error response
+     * 
+     * @param string $message Error message
+     * @param mixed|null $errors Validation errors if any
+     * @param int $statusCode HTTP status code
+     * @return JsonResponse
+     */
+    protected function errorResponse(string $message, $errors = null, int $statusCode = 400): JsonResponse
+    {
+        $data = [];
+        
+        if ($errors) {
+            $data['errors'] = $errors;
+        }
+        
+        return $this->apiResponse('error', $message, $data, $statusCode);
+    }
     /**
      * Create a new AuthController instance.
      *
@@ -24,27 +79,59 @@ class AuthController extends Controller
     }
 
     /**
-     * Get a JWT via given credentials.
+     * Get a JWT via given credentials (email or username).
      *
      * @param  Request  $request
      * @return JsonResponse
+     * 
+     * @response 200 {
+     *   "status": "success",
+     *   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+     *   "token_type": "bearer",
+     *   "expires_in": 3600,
+     *   "user": {...}
+     * }
+     * 
+     * @response 401 {
+     *   "status": "error",
+     *   "message": "Unauthorized"
+     * }
+     * 
+     * @response 422 {
+     *   "status": "error",
+     *   "message": "Validation failed",
+     *   "errors": {
+     *     "email": ["The email field is required."],
+     *     "password": ["The password field is required."]
+     *   }
+     * }
      */
     public function login(Request $request): JsonResponse
     {
+        // Validate the request
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
+            'login' => 'required|string',
             'password' => 'required|string|min:6',
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return $this->errorResponse('Validation failed', $validator->errors(), 422);
         }
-
-        $credentials = $request->only('email', 'password');
-
+        
+        // Determine if login is email or username
+        $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        
+        // Authenticate with determined login type
+        $credentials = [
+            $loginType => $request->login,
+            'password' => $request->password
+        ];
+        
+        // Attempt authentication
         $token = auth('api')->attempt($credentials);
+        
         if (!$token) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return $this->errorResponse('Invalid credentials', null, 401);
         }
 
         return $this->respondWithToken($token);
@@ -55,6 +142,25 @@ class AuthController extends Controller
      *
      * @param  Request  $request
      * @return JsonResponse
+     * 
+     * @response 201 {
+     *   "status": "success",
+     *   "message": "User successfully registered",
+     *   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+     *   "token_type": "bearer",
+     *   "expires_in": 3600,
+     *   "user": {...}
+     * }
+     * 
+     * @response 400 {
+     *   "status": "error",
+     *   "message": "Validation failed",
+     *   "errors": {
+     *     "username": ["The username has already been taken."],
+     *     "email": ["The email has already been taken."],
+     *     "password": ["The password confirmation does not match."]
+     *   }
+     * }
      */
     public function register(Request $request): JsonResponse
     {
@@ -68,7 +174,7 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
+            return $this->errorResponse('Validation failed', $validator->errors(), 422);
         }
 
         $user = User::create([
@@ -83,8 +189,9 @@ class AuthController extends Controller
         // Assign default role for mobile app users
         $user->assignRole('app user');
         
-        // Generate token immediately after registration
-        $token = auth('api')->login($user);
+        // Login and get token
+        auth('api')->login($user);
+        $token = JWTAuth::fromUser($user);
         
         // Return token along with user data
         return $this->respondWithToken($token, 'User successfully registered', 201);
@@ -94,26 +201,48 @@ class AuthController extends Controller
      * Log the user out (Invalidate the token).
      *
      * @return JsonResponse
+     * 
+     * @response 200 {
+     *   "status": "success",
+     *   "message": "Successfully logged out"
+     * }
      */
     public function logout(): JsonResponse
     {
         auth('api')->logout();
 
-        return response()->json(['message' => 'Successfully logged out']);
+        return $this->successResponse('Successfully logged out');
     }
 
     /**
      * Refresh a token.
      *
      * @return JsonResponse
+     * 
+     * @response 200 {
+     *   "status": "success",
+     *   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+     *   "token_type": "bearer",
+     *   "expires_in": 3600,
+     *   "user": {...}
+     * }
+     * 
+     * @response 401 {
+     *   "status": "error",
+     *   "message": "Could not refresh token: Token has expired"
+     * }
      */
     public function refresh(): JsonResponse
     {
         try {
-            $newToken = auth('api')->refresh();
+            // Get the token provider and refresh the token
+            // Using JWTAuth facade for token refresh
+            // This requires tymon/jwt-auth and should work if properly configured
+            $token = JWTAuth::getToken();
+            $newToken = JWTAuth::refresh($token);
             return $this->respondWithToken($newToken);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Could not refresh token'], 401);
+            return $this->errorResponse('Could not refresh token: ' . $e->getMessage(), null, 401);
         }
     }
 
@@ -121,13 +250,25 @@ class AuthController extends Controller
      * Get the authenticated User.
      *
      * @return JsonResponse
+     * 
+     * @response 200 {
+     *   "status": "success",
+     *   "user": {...},
+     *   "roles": [...],
+     *   "permissions": [...]
+     * }
+     * 
+     * @response 401 {
+     *   "status": "error",
+     *   "message": "Unauthorized"
+     * }
      */
     public function me(): JsonResponse
     {
         $user = auth('api')->user();
         
         if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return $this->errorResponse('Unauthorized', null, 401);
         }
         
         // Get user roles and permissions if using Spatie permissions package
@@ -145,12 +286,11 @@ class AuthController extends Controller
      * Get the token array structure.
      *
      * @param  string $token
-     * @param  string|null $message
-     * @param  int $statusCode
-     *
+     * @param string|null $message
+     * @param int $statusCode
      * @return JsonResponse
      */
-    protected function respondWithToken(string $token, string $message = '', int $statusCode = 200): JsonResponse
+    protected function respondWithToken(string $token, ?string $message = null, int $statusCode = 200): JsonResponse
     {
         $user = auth('api')->user();
         
@@ -159,22 +299,19 @@ class AuthController extends Controller
         $permissions = method_exists($user, 'getAllPermissions') ? $user->getAllPermissions()->pluck('name') : [];
         
         // JWT TTL from config instead of using factory() method
-        $expires_in = config('jwt.ttl', 60) * 60;
+        // Prepare user data with token information
+        $userData = $user ? $user->toArray() : [];
+        $userData['roles'] = $roles;
+        $userData['permissions'] = $permissions;
         
-        $response = [
+        $responseData = [
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => $expires_in,
-            'user' => $user,
-            'roles' => $roles,
-            'permissions' => $permissions
+            'expires_in' => config('jwt.ttl', 60) * 60,
+            'user' => $userData
         ];
         
-        if ($message !== '') {
-            $response['message'] = $message;
-        }
-        
-        return response()->json($response, $statusCode);
+        return $this->successResponse($message, $responseData, $statusCode);
     }
     
     /**
@@ -182,6 +319,33 @@ class AuthController extends Controller
      *
      * @param  Request  $request
      * @return JsonResponse
+     * 
+     * @response 200 {
+     *   "status": "success",
+     *   "message": "Profile updated successfully",
+     *   "user": {...},
+     *   "roles": [...],
+     *   "permissions": [...]
+     * }
+     * 
+     * @response 401 {
+     *   "status": "error",
+     *   "message": "Unauthorized"
+     * }
+     * 
+     * @response 422 {
+     *   "status": "error",
+     *   "message": "Validation failed",
+     *   "errors": {
+     *     "name": ["The name field is required."],
+     *     "email": ["This email is already in use."]
+     *   }
+     * }
+     * 
+     * @response 500 {
+     *   "status": "error",
+     *   "message": "Failed to update profile: Database connection error"
+     * }
      */
     public function updateProfile(Request $request): JsonResponse
     {
@@ -189,7 +353,7 @@ class AuthController extends Controller
         $user = auth('api')->user();
         
         if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return $this->errorResponse('Unauthorized', null, 401);
         }
         
         $validator = Validator::make($request->all(), [
@@ -199,16 +363,16 @@ class AuthController extends Controller
             'mobile' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
         ]);
-
+        
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 400);
+            return $this->errorResponse('Validation failed', $validator->errors(), 422);
         }
         
         $updateData = [
             'name' => $request->name,
             'email' => $request->email,
             'mobile' => $request->mobile,
-            'address' => $request->address,
+            'address' => $request->address
         ];
         
         // Only update password if provided
@@ -226,14 +390,13 @@ class AuthController extends Controller
             $roles = method_exists($updatedUser, 'getRoleNames') ? $updatedUser->getRoleNames() : [];
             $permissions = method_exists($updatedUser, 'getAllPermissions') ? $updatedUser->getAllPermissions()->pluck('name') : [];
             
-            return response()->json([
-                'message' => 'Profile updated successfully',
+            return $this->successResponse('Profile updated successfully', [
                 'user' => $updatedUser,
                 'roles' => $roles,
                 'permissions' => $permissions
             ]);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to update profile', 'message' => $e->getMessage()], 500);
+            return $this->errorResponse('Failed to update profile: ' . $e->getMessage(), null, 500);
         }
     }
     
@@ -242,6 +405,29 @@ class AuthController extends Controller
      *
      * @param  Request  $request
      * @return JsonResponse
+     * 
+     * @response 200 {
+     *   "status": "success",
+     *   "message": "Account successfully deleted"
+     * }
+     * 
+     * @response 401 {
+     *   "status": "error",
+     *   "message": "Unauthorized"
+     * }
+     * 
+     * @response 422 {
+     *   "status": "error",
+     *   "message": "Validation failed",
+     *   "errors": {
+     *     "password": ["The provided password is incorrect."]
+     *   }
+     * }
+     * 
+     * @response 500 {
+     *   "status": "error",
+     *   "message": "Failed to delete account: Database error"
+     * }
      */
     public function deleteAccount(Request $request): JsonResponse
     {
@@ -250,7 +436,10 @@ class AuthController extends Controller
             $user = auth('api')->user();
             
             if (!$user) {
-                return response()->json(['error' => 'Unauthorized'], 401);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized'
+                ], 401);
             }
             
             // Store user ID before we do anything else
@@ -262,25 +451,31 @@ class AuthController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return response()->json(['error' => 'Validation failed', 'details' => $validator->errors()], 422);
+                return response()->json([
+                    'status' => 'error',
+                    'errors' => $validator->errors()
+                ], 422);
             }
             
             // Check if the provided password matches
             if (!Hash::check((string)$request->password, (string)$user->password)) {
-                return response()->json(['error' => 'Current password is incorrect'], 422);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Current password is incorrect'
+                ], 422);
             }
             
             // Delete the user account first
             $deleted = User::where('id', $userId)->delete();
             
             if (!$deleted) {
-                return response()->json(['error' => 'Failed to delete account'], 500);
+                return $this->errorResponse('Failed to delete account', null, 500);
             }
             
             // Log the user out by invalidating their token
             auth('api')->logout();
             
-            return response()->json(['message' => 'Account successfully deleted'], 200);
+            return $this->successResponse('Account successfully deleted');
         } catch (\Exception $e) {
             // Log the exception but ensure we return JSON
             Log::error('Account deletion failed: ' . $e->getMessage(), [
@@ -288,10 +483,7 @@ class AuthController extends Controller
                 'exception' => $e
             ]);
             
-            return response()->json([
-                'error' => 'Failed to delete account',
-                'message' => 'An unexpected error occurred'
-            ], 500);
+            return $this->errorResponse('Failed to delete account: An unexpected error occurred', null, 500);
         }
     }
 }

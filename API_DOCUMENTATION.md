@@ -29,7 +29,7 @@ Mobile applications should use JWT authentication. JWT provides a stateless, tok
 **Request:**
 ```json
 {
-  "email": "user@example.com",
+  "login": "user@example.com", // Can be email or username
   "password": "password"
 }
 ```
@@ -37,12 +37,34 @@ Mobile applications should use JWT authentication. JWT provides a stateless, tok
 **Response:**
 ```json
 {
+  "status": "success",
+  "message": "Successfully logged in",
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
   "token_type": "bearer",
   "expires_in": 3600,
   "user": {...},
   "roles": [...],
   "permissions": [...]
+}
+```
+
+**Error Response (401 Unauthorized):**
+```json
+{
+  "status": "error",
+  "message": "Unauthorized"
+}
+```
+
+**Error Response (422 Validation Error):**
+```json
+{
+  "status": "error",
+  "message": "Validation failed",
+  "errors": {
+    "email": ["The email field is required."],
+    "password": ["The password field is required."]
+  }
 }
 ```
 
@@ -73,6 +95,8 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Response:**
 ```json
 {
+  "status": "success",
+  "message": "User successfully registered",
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
   "token_type": "bearer",
   "expires_in": 3600,
@@ -84,8 +108,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
     "updated_at": "2023-06-15T12:34:56.000000Z"
   },
   "roles": ["app user"],
-  "permissions": [],
-  "message": "User successfully registered"
+  "permissions": []
 }
 ```
 
@@ -101,6 +124,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Response:**
 ```json
 {
+  "status": "success",
   "user": {
     "id": 1,
     "name": "John Doe",
@@ -111,6 +135,15 @@ Authorization: Bearer YOUR_JWT_TOKEN
   "roles": ["app user"],
   "permissions": ["view spotlights", "create comments"]
 }
+```
+
+**Error Response (401 Unauthorized):**
+```json
+{
+  "status": "error",
+  "message": "Unauthorized"
+}
+```
 ```
 
 ### Update User Profile
@@ -144,6 +177,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Successful Response (200 OK):**
 ```json
 {
+  "status": "success",
   "message": "Profile updated successfully",
   "user": {
     "id": 1,
@@ -161,26 +195,31 @@ Authorization: Bearer YOUR_JWT_TOKEN
 
 **Error Responses:**
 
-*Validation error (400 Bad Request):*
+*Validation error (422 Unprocessable Entity):*
 ```json
 {
-  "name": ["The name field is required."],
-  "email": ["The email has already been taken."]
+  "status": "error",
+  "message": "Validation failed",
+  "errors": {
+    "name": ["The name field is required."],
+    "email": ["The email has already been taken."]
+  }
 }
 ```
 
 *Unauthorized (401 Unauthorized):*
 ```json
 {
-  "error": "Unauthorized"
+  "status": "error",
+  "message": "Unauthorized"
 }
 ```
 
 *Server error (500 Internal Server Error):*
 ```json
 {
-  "error": "Failed to update profile",
-  "message": "Error details..."
+  "status": "error",
+  "message": "Failed to update profile: Error details..."
 }
 ```
 
@@ -196,12 +235,21 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Response:**
 ```json
 {
+  "status": "success",
   "access_token": "NEW_JWT_TOKEN",
   "token_type": "bearer",
   "expires_in": 3600,
   "user": {...},
   "roles": [...],
   "permissions": [...]
+}
+```
+
+**Error Response (401 Unauthorized):**
+```json
+{
+  "status": "error",
+  "message": "Unauthorized"
 }
 ```
 
@@ -217,6 +265,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Response:**
 ```json
 {
+  "status": "success",
   "message": "Successfully logged out"
 }
 ```
@@ -242,38 +291,45 @@ Authorization: Bearer YOUR_JWT_TOKEN
 **Successful Response (200 OK):**
 ```json
 {
+  "status": "success",
   "message": "Account successfully deleted"
 }
 ```
 
 **Error Responses:**
 
-*Password not provided (422 Unprocessable Entity):*
+*Validation error (422 Unprocessable Entity):*
 ```json
 {
-  "password": ["The password field is required."]
+  "status": "error",
+  "message": "Validation failed",
+  "errors": {
+    "password": ["The password field is required."]
+  }
 }
 ```
 
 *Incorrect password (422 Unprocessable Entity):*
 ```json
 {
-  "error": "Current password is incorrect"
+  "status": "error",
+  "message": "The provided password is incorrect"
 }
 ```
 
 *Unauthorized (401 Unauthorized):*
 ```json
 {
-  "error": "Unauthorized"
+  "status": "error",
+  "message": "Unauthorized"
 }
 ```
 
 *Server error (500 Internal Server Error):*
 ```json
 {
-  "error": "Failed to delete account",
-  "message": "Error details..."
+  "status": "error",
+  "message": "Failed to delete account: An unexpected error occurred"
 }
 ```
 

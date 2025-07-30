@@ -4,7 +4,10 @@ namespace App\Providers;
 
 use App\Providers\FilamentAdServiceProvider;
 use App\Providers\FilamentBannerServiceProvider;
+use App\Providers\UsernameEmailAuthProvider;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Contracts\Foundation\Application;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +26,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Register our custom authentication provider
+        Auth::provider('username_email', function(Application $app, array $config) {
+            return new UsernameEmailAuthProvider(
+                $app['hash'],
+                $config['model']
+            );
+        });
     }
 }

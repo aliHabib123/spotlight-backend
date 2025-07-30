@@ -97,6 +97,7 @@ class User extends Authenticatable implements JWTSubject
         return [
             'name' => $this->name,
             'email' => $this->email,
+            'username' => $this->username,
             'roles' => $this->getRoleNames(),
             'permissions' => $this->getAllPermissions()->pluck('name')
         ];
