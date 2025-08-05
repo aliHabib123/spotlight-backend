@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\NewsCategoryController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\SavedNewsController;
 use App\Http\Controllers\Api\SavedSpotlightController;
 use App\Http\Controllers\Api\ShippingAddressController;
 use App\Http\Controllers\Api\ShopCategoryController;
@@ -219,6 +220,14 @@ Route::middleware([\App\Http\Middleware\JsonApiAuthentication::class . ':api'])-
         Route::post('/{id}', [SavedSpotlightController::class, 'save']); // Save a spotlight
         Route::delete('/{id}', [SavedSpotlightController::class, 'unsave']); // Unsave a spotlight
         Route::get('/{id}/check', [SavedSpotlightController::class, 'check']); // Check if a spotlight is saved
+    });
+    
+    // Saved News (authenticated users only)
+    Route::prefix('saved-news')->group(function () {
+        Route::get('/', [SavedNewsController::class, 'index']); // List user's saved news
+        Route::post('/{id}', [SavedNewsController::class, 'save']); // Save a news item
+        Route::delete('/{id}', [SavedNewsController::class, 'unsave']); // Unsave a news item
+        Route::get('/{id}/check', [SavedNewsController::class, 'check']); // Check if a news item is saved
     });
     
     // Contact Messages Management (admin only)

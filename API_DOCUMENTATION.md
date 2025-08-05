@@ -883,7 +883,133 @@ Authorization: Bearer YOUR_JWT_TOKEN
 }
 ```
 
-**Response:** Same format as List All Spotlights
+### Saved News
+
+#### List Saved News
+
+**Endpoint:** `GET /api/v1/saved-news`
+
+**Authentication:** Required (JWT)
+
+**Description:** Retrieves a paginated list of news items saved by the authenticated user.
+
+**Parameters:**
+- `per_page` (optional): Number of items per page (default: 10)
+- `page` (optional): Page number (default: 1)
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "current_page": 1,
+    "data": [
+      {
+        "id": 3,
+        "title": "New Cafe Opens in Downtown",
+        "slug": "new-cafe-opens-in-downtown",
+        "summary": "A trendy new cafe has opened in the downtown area",
+        "content": "Full article content...",
+        "featured_image": "news/cafe-image.jpg",
+        "news_category_id": 2,
+        "user_id": 1,
+        "is_published": true,
+        "is_featured": false,
+        "published_at": "2025-06-15T08:30:00.000000Z",
+        "show_date": true,
+        "created_at": "2025-06-15T08:00:00.000000Z",
+        "updated_at": "2025-06-15T08:00:00.000000Z",
+        "category": {
+          "id": 2,
+          "name": "Local News",
+          "slug": "local-news"
+        },
+        "author": {
+          "id": 1,
+          "name": "Admin User"
+        }
+      }
+    ],
+    "first_page_url": "http://localhost/api/v1/saved-news?page=1",
+    "from": 1,
+    "last_page": 1,
+    "last_page_url": "http://localhost/api/v1/saved-news?page=1",
+    "links": [...],
+    "next_page_url": null,
+    "path": "http://localhost/api/v1/saved-news",
+    "per_page": 10,
+    "prev_page_url": null,
+    "to": 1,
+    "total": 1
+  }
+}
+```
+
+#### Save a News Item
+
+**Endpoint:** `POST /api/v1/saved-news/{id}`
+
+**Authentication:** Required (JWT)
+
+**Description:** Saves a news item for the authenticated user.
+
+**Parameters:**
+- `id`: News ID to save
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "News item saved successfully",
+  "data": {
+    "user_id": 1,
+    "news_id": 3,
+    "updated_at": "2025-06-20T02:25:00.000000Z",
+    "created_at": "2025-06-20T02:25:00.000000Z",
+    "id": 1
+  }
+}
+```
+
+#### Unsave a News Item
+
+**Endpoint:** `DELETE /api/v1/saved-news/{id}`
+
+**Authentication:** Required (JWT)
+
+**Description:** Removes a news item from the authenticated user's saved news.
+
+**Parameters:**
+- `id`: News ID to unsave
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "News item unsaved successfully"
+}
+```
+
+#### Check if News Item is Saved
+
+**Endpoint:** `GET /api/v1/saved-news/{id}/check`
+
+**Authentication:** Required (JWT)
+
+**Description:** Checks if a news item is saved by the authenticated user.
+
+**Parameters:**
+- `id`: News ID to check
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "is_saved": true
+  }
+}
+```
 
 ### Locations
 
