@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Str;
 
 class News extends Model
@@ -96,6 +98,26 @@ class News extends Model
     /**
      * Scope a query to only include published news.
      */
+    /**
+     * Get the users who saved this news.
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     */
+    public function savedBy()
+    {
+        return $this->hasManyThrough(User::class, SavedNews::class, 'news_id', 'id', 'id', 'user_id');
+    }
+    
+    /**
+     * Get saved news records for this news.
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function savedRecords()
+    {
+        return $this->hasMany(SavedNews::class);
+    }
+    
     public function scopePublished($query)
     {
         return $query->where('is_published', true)

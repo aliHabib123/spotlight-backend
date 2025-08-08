@@ -110,6 +110,22 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     {
         return $this->hasManyThrough(Spotlight::class, SavedSpotlight::class, 'user_id', 'id', 'id', 'spotlight_id');
     }
+    
+    /**
+     * Get the news that this user has saved.
+     */
+    public function savedNews(): HasMany
+    {
+        return $this->hasMany(SavedNews::class);
+    }
+    
+    /**
+     * Get the saved news entities directly.
+     */
+    public function savedNewsEntities(): HasManyThrough
+    {
+        return $this->hasManyThrough(News::class, SavedNews::class, 'user_id', 'id', 'id', 'news_id');
+    }
 
     /**
      * Get the identifier that will be stored in the subject claim of the JWT.
