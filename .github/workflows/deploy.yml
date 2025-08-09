@@ -21,19 +21,36 @@ jobs:
         ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
 
     - name: Deploy over SSH
+      env:
+        SERVER_KEY_PATH: ${{ secrets.SERVER_GITHUB_KEY_PATH }}
+        DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
       run: |
-        ssh -T -o IdentitiesOnly=yes -i ~/.ssh/id_rsa_github ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-          cd ${{ secrets.TARGET_DIR }}
+        # Create the SSH command with the key path from secrets
+        ssh -i ~/.ssh/id_rsa_github ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << EOF
+          cd ${DEPLOY_PATH}
+
+          # Configure Git to use the server's SSH key for GitHub operations
+          git config core.sshCommand "ssh -i ${SERVER_KEY_PATH} -o IdentitiesOnly=yes"
+
+          # Add GitHub to known hosts if not already added
+          if [ ! -f ~/.ssh/known_hosts ] || ! grep -q "github.com" ~/.ssh/known_hosts; then
+            mkdir -p ~/.ssh
+            ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+            chmod 644 ~/.ssh/known_hosts
+          fi
+
           # Stash any local changes to prevent conflicts
           git stash
+
           # Fetch latest changes
           git fetch origin release
+
           # Reset to the latest commit on the release branch
           git reset --hard origin/release
           # Clean up any untracked files (optional, be careful with this)
           # git clean -fd
           # Install dependencies
-          composer install --no-dev --optimize-autoloader
+          composer install --no-dev --optimize-autoloader --ignore-platform-reqs
           # Publish vendor assets (config, migrations, assets) for all packages
           # php artisan vendor:publish --all --force
           php artisan migrate --force
