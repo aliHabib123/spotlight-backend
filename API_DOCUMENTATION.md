@@ -627,12 +627,22 @@ Authorization: Bearer YOUR_JWT_TOKEN
     "category": {...},
     "location": {...},
     "tags": [...],
-    "rating": 4.5,
+    "average_rating": 4, // Integer rating from 0-5 (0 when no ratings exist)
+    "review_count": 8, // Total number of ratings
     "is_active": true,
     "is_featured": false,
     "contact_email": "example@example.com",
     "contact_phone": "+1234567890",
     "website_url": "https://example.com"
+  },
+  "user_rating": { // Only present if user is authenticated
+    "id": 1,
+    "user_id": 2,
+    "spotlight_id": 1,
+    "rating": 5,
+    "comment": "Great place!",
+    "created_at": "2025-08-10T15:30:45.000000Z",
+    "updated_at": "2025-08-10T15:30:45.000000Z"
   }
 }
 ```
@@ -1007,6 +1017,177 @@ Authorization: Bearer YOUR_JWT_TOKEN
   "status": "success",
   "data": {
     "is_saved": true
+  }
+}
+```
+
+### Spotlight Ratings
+
+#### List Spotlight Ratings
+
+**Endpoint:** `GET /api/v1/spotlight-ratings/{id}`
+
+**Authentication:** Required (JWT)
+
+**Description:** Retrieves all ratings for a specific spotlight.
+
+**Parameters:**
+- `id`: Spotlight ID
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 1,
+      "user_id": 2,
+      "spotlight_id": 5,
+      "rating": 5,
+      "comment": "Excellent experience!",
+      "created_at": "2025-08-10T12:30:45.000000Z",
+      "updated_at": "2025-08-10T12:30:45.000000Z",
+      "user": {
+        "id": 2,
+        "name": "John Doe"
+      }
+    },
+    {
+      "id": 2,
+      "user_id": 3,
+      "spotlight_id": 5,
+      "rating": 4,
+      "comment": "Very good place",
+      "created_at": "2025-08-10T13:45:12.000000Z",
+      "updated_at": "2025-08-10T13:45:12.000000Z",
+      "user": {
+        "id": 3,
+        "name": "Jane Smith"
+      }
+    }
+  ],
+  "average_rating": 4.5,
+  "review_count": 2
+}
+```
+
+#### Rate a Spotlight
+
+**Endpoint:** `POST /api/v1/spotlight-ratings/{id}`
+
+**Authentication:** Required (JWT)
+
+**Description:** Creates or updates the authenticated user's rating for a spotlight.
+
+**Parameters:**
+- `id`: Spotlight ID to rate
+
+**Request Body:**
+```json
+{
+  "rating": 5,           // Required, integer from 1-5
+  "comment": "Amazing!" // Optional, string up to 1000 characters
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Spotlight rated successfully",
+  "data": {
+    "id": 3,
+    "user_id": 1,
+    "spotlight_id": 5,
+    "rating": 5,
+    "comment": "Amazing!",
+    "created_at": "2025-08-11T02:30:45.000000Z",
+    "updated_at": "2025-08-11T02:30:45.000000Z"
+  }
+}
+```
+
+#### Update a Rating
+
+**Endpoint:** `PUT /api/v1/spotlight-ratings/{id}`
+
+**Authentication:** Required (JWT)
+
+**Description:** Updates the authenticated user's existing rating for a spotlight.
+
+**Parameters:**
+- `id`: Spotlight ID to update rating for
+
+**Request Body:**
+```json
+{
+  "rating": 4,           // Required, integer from 1-5
+  "comment": "Good place, but service was slow" // Optional
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Rating updated successfully",
+  "data": {
+    "id": 3,
+    "user_id": 1,
+    "spotlight_id": 5,
+    "rating": 4,
+    "comment": "Good place, but service was slow",
+    "created_at": "2025-08-11T02:30:45.000000Z",
+    "updated_at": "2025-08-11T02:35:20.000000Z"
+  }
+}
+```
+
+#### Delete a Rating
+
+**Endpoint:** `DELETE /api/v1/spotlight-ratings/{id}`
+
+**Authentication:** Required (JWT)
+
+**Description:** Deletes the authenticated user's rating for a spotlight.
+
+**Parameters:**
+- `id`: Spotlight ID to remove rating from
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Rating deleted successfully"
+}
+```
+
+#### Check if User Has Rated a Spotlight
+
+**Endpoint:** `GET /api/v1/spotlight-ratings/{id}/check`
+
+**Authentication:** Required (JWT)
+
+**Description:** Checks if the authenticated user has already rated a spotlight.
+
+**Parameters:**
+- `id`: Spotlight ID to check
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "has_rated": true,
+    "rating": {
+      "id": 3,
+      "user_id": 1,
+      "spotlight_id": 5,
+      "rating": 4,
+      "comment": "Good place, but service was slow",
+      "created_at": "2025-08-11T02:30:45.000000Z",
+      "updated_at": "2025-08-11T02:35:20.000000Z"
+    }
   }
 }
 ```

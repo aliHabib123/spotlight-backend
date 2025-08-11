@@ -199,4 +199,37 @@ class Spotlight extends Model
     {
         return $this->hasMany(SavedSpotlight::class);
     }
+    
+    /**
+     * Get all ratings for this spotlight.
+     */
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(SpotlightRating::class);
+    }
+    
+    /**
+     * Calculate and update the average rating.
+     */
+    public function updateAverageRating(): void
+    {
+        $avgRating = $this->ratings()->avg('rating') ?? 0;
+        $count = $this->ratings()->count();
+        
+        $this->update([
+            'average_rating' => round($avgRating),
+            'review_count' => $count
+        ]);
+    }
+    
+    /**
+     * Get the average rating attribute.
+     *
+     * @param  mixed  $value
+     * @return int
+     */
+    public function getAverageRatingAttribute($value)
+    {
+        return $value ?? 0;
+    }
 }

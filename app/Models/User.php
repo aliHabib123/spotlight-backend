@@ -163,4 +163,12 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     {
         $this->notify(new VerifyEmail);
     }
+    
+    /**
+     * Get the spotlight ratings that this user has created.
+     */
+    public function spotlightRatings(): HasMany
+    {
+        return $this->hasMany(SpotlightRating::class);
+    }
 }
