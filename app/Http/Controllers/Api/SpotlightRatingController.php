@@ -91,10 +91,15 @@ class SpotlightRatingController extends Controller
         // Update average rating on the spotlight
         $spotlight->updateAverageRating();
         
+        // Reload the spotlight to get updated average_rating and review_count
+        $spotlight = $spotlight->fresh();
+        
         return response()->json([
             'status' => 'success',
             'message' => 'Spotlight rated successfully',
-            'data' => $rating->load('user:id,name,username')
+            'data' => $rating->load('user:id,name,username'),
+            'average_rating' => $spotlight->average_rating,
+            'review_count' => $spotlight->review_count
         ]);
     }
     
@@ -137,10 +142,15 @@ class SpotlightRatingController extends Controller
         // Update average rating on the spotlight
         $spotlight->updateAverageRating();
         
+        // Reload the spotlight to get updated average_rating and review_count
+        $spotlight = $spotlight->fresh();
+        
         return response()->json([
             'status' => 'success',
             'message' => 'Rating updated successfully',
-            'data' => $rating->fresh()->load('user:id,name,username')
+            'data' => $rating->fresh()->load('user:id,name,username'),
+            'average_rating' => $spotlight->average_rating,
+            'review_count' => $spotlight->review_count
         ]);
     }
     
@@ -193,18 +203,25 @@ class SpotlightRatingController extends Controller
         $rating = $spotlight->ratings()
             ->where('user_id', $user->id)
             ->first();
-            
+        
+        $averageRating = $spotlight->average_rating;
+        $reviewCount = $spotlight->review_count;
+        
         if ($rating) {
             return response()->json([
                 'status' => 'success',
                 'rated' => true,
-                'data' => $rating
+                'data' => $rating,
+                'average_rating' => $averageRating,
+                'review_count' => $reviewCount
             ]);
         }
         
         return response()->json([
             'status' => 'success',
-            'rated' => false
+            'rated' => false,
+            'average_rating' => $averageRating,
+            'review_count' => $reviewCount
         ]);
     }
 }

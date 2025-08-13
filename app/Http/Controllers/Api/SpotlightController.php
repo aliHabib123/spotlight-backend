@@ -393,11 +393,14 @@ class SpotlightController extends Controller
      */
     public function show(Spotlight $spotlight)
     {
-        $this->authorize('view', $spotlight);
-
-        // For published spotlights, anyone can view
-        // For unpublished ones, check permission
+        // Only check authorization for unpublished spotlights
         if (!$spotlight->is_published) {
+            // Return 404 for guests trying to access unpublished spotlights
+            if (Auth::guest()) {
+                abort(404, 'Spotlight not found');
+            }
+            
+            // For authenticated users, check if they have permission to manage spotlights
             $this->authorize('manage', $spotlight);
         }
         

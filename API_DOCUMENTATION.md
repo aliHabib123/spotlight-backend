@@ -1103,7 +1103,9 @@ Authorization: Bearer YOUR_JWT_TOKEN
     "comment": "Amazing!",
     "created_at": "2025-08-11T02:30:45.000000Z",
     "updated_at": "2025-08-11T02:30:45.000000Z"
-  }
+  },
+  "average_rating": 4.2,
+  "review_count": 15
 }
 ```
 
@@ -1139,7 +1141,9 @@ Authorization: Bearer YOUR_JWT_TOKEN
     "comment": "Good place, but service was slow",
     "created_at": "2025-08-11T02:30:45.000000Z",
     "updated_at": "2025-08-11T02:35:20.000000Z"
-  }
+  },
+  "average_rating": 4.2,
+  "review_count": 15
 }
 ```
 
@@ -1177,18 +1181,29 @@ Authorization: Bearer YOUR_JWT_TOKEN
 ```json
 {
   "status": "success",
+  "rated": true,
   "data": {
-    "has_rated": true,
-    "rating": {
-      "id": 3,
-      "user_id": 1,
-      "spotlight_id": 5,
-      "rating": 4,
-      "comment": "Good place, but service was slow",
-      "created_at": "2025-08-11T02:30:45.000000Z",
-      "updated_at": "2025-08-11T02:35:20.000000Z"
-    }
-  }
+    "id": 3,
+    "user_id": 1,
+    "spotlight_id": 5,
+    "rating": 4,
+    "comment": "Good place, but service was slow",
+    "created_at": "2025-08-11T02:30:45.000000Z",
+    "updated_at": "2025-08-11T02:35:20.000000Z"
+  },
+  "average_rating": 4.2,
+  "review_count": 15
+}
+```
+
+If the user hasn't rated the spotlight:
+
+```json
+{
+  "status": "success",
+  "rated": false,
+  "average_rating": 4.2,
+  "review_count": 15
 }
 ```
 
