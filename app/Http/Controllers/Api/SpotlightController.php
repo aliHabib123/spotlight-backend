@@ -140,6 +140,17 @@ class SpotlightController extends Controller
         $query->orderBy($sortField, $sortDirection);
 
         $result = $query->paginate($request->input('per_page', 15));
+        
+        // Add user rating for each spotlight (null if not authenticated or not rated)
+        foreach ($result->items() as $spotlight) {
+            $userRating = null;
+            if (Auth::check()) {
+                $userRating = $spotlight->ratings()
+                    ->where('user_id', Auth::id())
+                    ->first();
+            }
+            $spotlight->user_rating = $userRating;
+        }
 
         // Log queries to storage for debugging
         $log = [
@@ -179,6 +190,17 @@ class SpotlightController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->input('per_page', 8));
         });
+        
+        // Add user rating for each spotlight (null if not authenticated or not rated)
+        foreach ($paginator->items() as $spotlight) {
+            $userRating = null;
+            if (Auth::check()) {
+                $userRating = $spotlight->ratings()
+                    ->where('user_id', Auth::id())
+                    ->first();
+            }
+            $spotlight->user_rating = $userRating;
+        }
 
         return response()->json($paginator);
     }
@@ -201,6 +223,17 @@ class SpotlightController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->input('per_page', 8));
         });
+        
+        // Add user rating for each spotlight (null if not authenticated or not rated)
+        foreach ($paginator->items() as $spotlight) {
+            $userRating = null;
+            if (Auth::check()) {
+                $userRating = $spotlight->ratings()
+                    ->where('user_id', Auth::id())
+                    ->first();
+            }
+            $spotlight->user_rating = $userRating;
+        }
 
         return response()->json($paginator);
     }
@@ -228,6 +261,17 @@ class SpotlightController extends Controller
             ->where('is_published', true)
             ->orderBy('created_at', 'desc')
             ->paginate($request->input('per_page', 15));
+            
+        // Add user rating for each spotlight (null if not authenticated or not rated)
+        foreach ($paginator->items() as $spotlight) {
+            $userRating = null;
+            if (Auth::check()) {
+                $userRating = $spotlight->ratings()
+                    ->where('user_id', Auth::id())
+                    ->first();
+            }
+            $spotlight->user_rating = $userRating;
+        }
 
         return response()->json($paginator);
     }
@@ -349,23 +393,38 @@ class SpotlightController extends Controller
      */
     public function show(Spotlight $spotlight)
     {
-        $this->authorize('view', $spotlight);
-
-        // For published spotlights, anyone can view
-        // For unpublished ones, check permission
+        // Only check authorization for unpublished spotlights
         if (!$spotlight->is_published) {
+            // Return 404 for guests trying to access unpublished spotlights
+            if (Auth::guest()) {
+                abort(404, 'Spotlight not found');
+            }
+            
+            // For authenticated users, check if they have permission to manage spotlights
             $this->authorize('manage', $spotlight);
         }
-
+        
+        // Load ratings with user information
+        $spotlight->load([
+            'category',
+            'tags',
+            'location',
+            'attributeValues.attributeDefinition',
+            'attributeValues.attributeOption',
+            'media'
+        ]);
+        
+        // Check if user is logged in and has rated this spotlight
+        $userRating = null;
+        if (Auth::check()) {
+            $userRating = $spotlight->ratings()
+                ->where('user_id', Auth::id())
+                ->first();
+        }
+        
         return response()->json([
-            'data' => $spotlight->load([
-                'category',
-                'tags',
-                'location',
-                'attributeValues.attributeDefinition',
-                'attributeValues.attributeOption',
-                'media'
-            ])
+            'data' => $spotlight,
+            'user_rating' => $userRating
         ]);
     }
 

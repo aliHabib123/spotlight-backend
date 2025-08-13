@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\ShopCategoryController;
 use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\SpotlightController;
 use App\Http\Controllers\Api\SpotlightCategoryController;
+use App\Http\Controllers\Api\SpotlightRatingController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\LocationController;
 use Illuminate\Http\Request;
@@ -228,6 +229,15 @@ Route::middleware([\App\Http\Middleware\JsonApiAuthentication::class . ':api'])-
         Route::post('/{id}', [SavedNewsController::class, 'save']); // Save a news item
         Route::delete('/{id}', [SavedNewsController::class, 'unsave']); // Unsave a news item
         Route::get('/{id}/check', [SavedNewsController::class, 'check']); // Check if a news item is saved
+    });
+    
+    // Spotlight Ratings (authenticated users only)
+    Route::prefix('spotlight-ratings')->group(function () {
+        Route::get('/{id}', [SpotlightRatingController::class, 'index']); // List ratings for a spotlight
+        Route::post('/{id}', [SpotlightRatingController::class, 'rate']); // Rate a spotlight
+        Route::put('/{id}', [SpotlightRatingController::class, 'update']); // Update existing rating
+        Route::delete('/{id}', [SpotlightRatingController::class, 'delete']); // Delete a rating
+        Route::get('/{id}/check', [SpotlightRatingController::class, 'check']); // Check if user has rated a spotlight
     });
     
     // Contact Messages Management (admin only)
