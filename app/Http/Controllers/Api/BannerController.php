@@ -7,6 +7,7 @@ use App\Models\Banner;
 use App\Models\BannerLocation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class BannerController extends Controller
@@ -19,29 +20,35 @@ class BannerController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Banner::with(['location', 'user:id,name']);
+        // Generate a cache key based on all request parameters
+        $cacheKey = 'banners_index_' . md5(json_encode($request->all()));
         
-        // Filter by location
-        if ($request->has('location_id')) {
-            $query->where('banner_location_id', $request->location_id);
-        } elseif ($request->has('location_slug')) {
-            $location = BannerLocation::where('slug', $request->location_slug)->first();
-            if ($location) {
-                $query->where('banner_location_id', $location->id);
+        // Cache for 1 hour (3600 seconds)
+        $result = Cache::remember($cacheKey, 3600, function() use ($request) {
+            $query = Banner::with(['location', 'user:id,name']);
+            
+            // Filter by location
+            if ($request->has('location_id')) {
+                $query->where('banner_location_id', $request->location_id);
+            } elseif ($request->has('location_slug')) {
+                $location = BannerLocation::where('slug', $request->location_slug)->first();
+                if ($location) {
+                    $query->where('banner_location_id', $location->id);
+                }
             }
-        }
-        
-        // Filter by active status
-        if ($request->has('active') && $request->boolean('active')) {
-            $query->active();
-        }
-        
-        // Order by display_order
-        $banners = $query->orderBy('display_order')->paginate(15);
+            
+            // Filter by active status
+            if ($request->has('active') && $request->boolean('active')) {
+                $query->active();
+            }
+            
+            // Order by display_order
+            return $query->orderBy('display_order')->paginate(15);
+        });
         
         return response()->json([
             'status' => 'success',
-            'data' => $banners
+            'data' => $result
         ]);
     }
 

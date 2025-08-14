@@ -26,8 +26,13 @@ class SpotlightController extends Controller
      */
     public function index(Request $request)
     {
-        // Enable query logging
-        DB::enableQueryLog();
+        // Generate a cache key based on all request parameters
+        $cacheKey = 'spotlights_index_' . md5(json_encode($request->all()));
+        
+        // Cache for 1 hour (3600 seconds)
+        return Cache::remember($cacheKey, 3600, function() use ($request) {
+            // Enable query logging
+            DB::enableQueryLog();
 
         $query = Spotlight::query()
             ->with(['category', 'tags', 'location']);
@@ -170,6 +175,7 @@ class SpotlightController extends Controller
         \Illuminate\Support\Facades\Log::info('Spotlight Filter Debug', ['data' => $log]);
 
         return response()->json($result);
+        });
     }
 
     /**
@@ -247,31 +253,39 @@ class SpotlightController extends Controller
      */
     public function byCategory(SpotlightCategory $category, Request $request)
     {
-        $categoryIds = [$category->id];
+        // Generate a cache key based on category and request parameters
+        $cacheKey = 'spotlights_category_' . $category->id . '_' . md5(json_encode($request->all()));
+        
+        // Cache for 1 hour (3600 seconds)
+        $paginator = Cache::remember($cacheKey, 3600, function() use ($category, $request) {
+            $categoryIds = [$category->id];
 
-        // Include child categories if requested
-        if ($request->input('include_children', false)) {
-            $children = $category->getAllChildren();
-            $categoryIds = array_merge($categoryIds, $children->pluck('id')->toArray());
-        }
-
-        $paginator = Spotlight::with(['category', 'tags', 'location'])
-            ->whereIn('category_id', $categoryIds)
-            // Filter by is_published
-            ->where('is_published', true)
-            ->orderBy('created_at', 'desc')
-            ->paginate($request->input('per_page', 15));
-            
-        // Add user rating for each spotlight (null if not authenticated or not rated)
-        foreach ($paginator->items() as $spotlight) {
-            $userRating = null;
-            if (Auth::check()) {
-                $userRating = $spotlight->ratings()
-                    ->where('user_id', Auth::id())
-                    ->first();
+            // Include child categories if requested
+            if ($request->input('include_children', false)) {
+                $children = $category->getAllChildren();
+                $categoryIds = array_merge($categoryIds, $children->pluck('id')->toArray());
             }
-            $spotlight->user_rating = $userRating;
-        }
+
+            $paginator = Spotlight::with(['category', 'tags', 'location'])
+                ->whereIn('category_id', $categoryIds)
+                // Filter by is_published
+                ->where('is_published', true)
+                ->orderBy('created_at', 'desc')
+                ->paginate($request->input('per_page', 15));
+            
+            // Add user rating for each spotlight (null if not authenticated or not rated)
+            foreach ($paginator->items() as $spotlight) {
+                $userRating = null;
+                if (Auth::check()) {
+                    $userRating = $spotlight->ratings()
+                        ->where('user_id', Auth::id())
+                        ->first();
+                }
+                $spotlight->user_rating = $userRating;
+            }
+
+            return $paginator;
+        });
 
         return response()->json($paginator);
     }
@@ -404,28 +418,38 @@ class SpotlightController extends Controller
             $this->authorize('manage', $spotlight);
         }
         
-        // Load ratings with user information
-        $spotlight->load([
-            'category',
-            'tags',
-            'location',
-            'attributeValues.attributeDefinition',
-            'attributeValues.attributeOption',
-            'media'
-        ]);
+        // Generate a cache key based on spotlight ID and user authentication status
+        $userId = Auth::check() ? Auth::id() : 'guest';
+        $cacheKey = 'spotlight_detail_' . $spotlight->id . '_' . $userId;
         
-        // Check if user is logged in and has rated this spotlight
-        $userRating = null;
-        if (Auth::check()) {
-            $userRating = $spotlight->ratings()
-                ->where('user_id', Auth::id())
-                ->first();
-        }
+        // Cache for 1 hour (3600 seconds)
+        $result = Cache::remember($cacheKey, 3600, function() use ($spotlight) {
+            // Load ratings with user information
+            $spotlight->load([
+                'category',
+                'tags',
+                'location',
+                'attributeValues.attributeDefinition',
+                'attributeValues.attributeOption',
+                'media'
+            ]);
+            
+            // Check if user is logged in and has rated this spotlight
+            $userRating = null;
+            if (Auth::check()) {
+                $userRating = $spotlight->ratings()
+                    ->where('user_id', Auth::id())
+                    ->first();
+            }
+            
+            // Store the data we want to return
+            return [
+                'data' => $spotlight,
+                'user_rating' => $userRating
+            ];
+        });
         
-        return response()->json([
-            'data' => $spotlight,
-            'user_rating' => $userRating
-        ]);
+        return response()->json($result);
     }
 
     /**

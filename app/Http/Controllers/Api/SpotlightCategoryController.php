@@ -27,7 +27,8 @@ class SpotlightCategoryController extends Controller
 
         $cacheKey = 'spotlight_categories_' . $request->input('include_inactive', false);
 
-        return Cache::remember($cacheKey, 3600, function() use ($request) {
+        // Cache for 24 hours (86400 seconds)
+        return Cache::remember($cacheKey, 86400, function() use ($request) {
             $query = SpotlightCategory::query();
 
             // Only include active categories for public view
