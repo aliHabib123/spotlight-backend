@@ -18,16 +18,14 @@ class TagController extends Controller
      */
     public function index(Request $request)
     {
-        // Clear the cache temporarily while we're debugging this feature
-        // We'll remove this line once filtering is confirmed working
-        Cache::forget('tags_all_category_all');
         
         // Create a more specific cache key based on all request parameters
         $categoryId = $request->input('category_id', 'all');
         $type = $request->input('type', 'all');
         $cacheKey = "tags_type_{$type}_category_{$categoryId}_" . md5(json_encode($request->all()));
         
-        return Cache::remember($cacheKey, 3600, function() use ($request) {
+        // Cache for 24 hours (86400 seconds)
+        return Cache::remember($cacheKey, 86400, function() use ($request) {
             $query = Tag::query();
             
             // Filter by type if specified

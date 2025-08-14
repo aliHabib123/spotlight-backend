@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BannerLocation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class BannerLocationController extends Controller
@@ -17,9 +18,12 @@ class BannerLocationController extends Controller
      */
     public function index(): JsonResponse
     {
-        $locations = BannerLocation::withCount('banners')
-            ->orderBy('name')
-            ->get();
+        // Cache banner locations for 24 hours (86400 seconds)
+        $locations = Cache::remember('banner_locations_all', 86400, function() {
+            return BannerLocation::withCount('banners')
+                ->orderBy('name')
+                ->get();
+        });
             
         return response()->json([
             'status' => 'success',
@@ -73,20 +77,28 @@ class BannerLocationController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        // Find by ID or slug
-        $location = is_numeric($id) 
-            ? BannerLocation::findOrFail($id)
-            : BannerLocation::where('slug', $id)->firstOrFail();
+        // Generate cache key based on ID or slug
+        $cacheKey = 'banner_location_' . $id;
         
-        // Get active banners for this location
-        $banners = $location->activeBanners()->with('user:id,name')->get();
+        // Cache for 1 hour (3600 seconds)
+        $data = Cache::remember($cacheKey, 3600, function() use ($id) {
+            // Find by ID or slug
+            $location = is_numeric($id) 
+                ? BannerLocation::findOrFail($id)
+                : BannerLocation::where('slug', $id)->firstOrFail();
+            
+            // Get active banners for this location
+            $banners = $location->activeBanners()->with('user:id,name')->get();
+            
+            return [
+                'location' => $location,
+                'banners' => $banners
+            ];
+        });
         
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'location' => $location,
-                'banners' => $banners
-            ]
+            'data' => $data
         ]);
     }
 
