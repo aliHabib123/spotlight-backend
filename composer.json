@@ -8,8 +8,11 @@
     "require": {
         "php": "^8.2",
         "doctrine/dbal": "^4.3",
+        "facebook/graph-sdk": "^5.1",
         "filament/filament": "^3.0",
+        "google/apiclient": "^2.18",
         "laravel/framework": "^12.0",
+        "laravel/socialite": "^5.23",
         "laravel/tinker": "^2.10.1",
         "php-open-source-saver/jwt-auth": "^2.8",
         "spatie/laravel-permission": "^6.19"

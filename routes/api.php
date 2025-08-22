@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\SpotlightController;
 use App\Http\Controllers\Api\SpotlightCategoryController;
 use App\Http\Controllers\Api\SpotlightRatingController;
+use App\Http\Controllers\Api\SocialController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\LocationController;
 use Illuminate\Http\Request;
@@ -45,6 +46,10 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::prefix('v1/auth')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('register', [AuthController::class, 'register']);
+    
+    // Social login routes
+    Route::post('google', [SocialController::class, 'googleLogin']);
+    Route::post('facebook', [SocialController::class, 'facebookLogin']);
     
     // Email verification routes
     Route::get('email/verify/{id}/{hash}', [AuthController::class, 'verify'])->name('api.verification.verify');
