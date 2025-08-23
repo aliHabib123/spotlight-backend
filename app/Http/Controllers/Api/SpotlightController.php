@@ -245,6 +245,37 @@ class SpotlightController extends Controller
     }
 
     /**
+     * Display the latest 10 spotlights from all categories.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function latest()
+    {
+        $cacheKey = 'latest_10_spotlights';
+
+        $spotlights = Cache::remember($cacheKey, 3600, function() {
+            return Spotlight::with(['category', 'tags', 'location'])
+                ->where('is_published', true)
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+        });
+        
+        // Add user rating for each spotlight (null if not authenticated or not rated)
+        foreach ($spotlights as $spotlight) {
+            $userRating = null;
+            if (Auth::check()) {
+                $userRating = $spotlight->ratings()
+                    ->where('user_id', Auth::id())
+                    ->first();
+            }
+            $spotlight->user_rating = $userRating;
+        }
+
+        return response()->json($spotlights);
+    }
+
+    /**
      * Display spotlights by category.
      *
      * @param  \App\Models\SpotlightCategory  $category
