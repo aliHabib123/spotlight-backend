@@ -83,6 +83,13 @@ class SocialController extends Controller
     {
         $user = auth('api')->user();
         
+        // Log the auth state for debugging
+        Log::info('Auth state in respondWithToken', [
+            'user_exists' => (bool) $user,
+            'auth_check' => auth('api')->check(),
+            'user_id' => $user ? $user->id : null,
+        ]);
+        
         // Prepare user data with token information
         $userData = [];        
         if ($user) {
@@ -100,6 +107,33 @@ class SocialController extends Controller
                 'created_at' => $user->created_at,
                 'updated_at' => $user->updated_at
             ];            
+        } else {
+            // If auth()->user() failed, try to decode the token and find the user manually
+            try {
+                $payload = JWTAuth::setToken($token)->getPayload();
+                $userId = $payload->get('sub');
+                if ($userId) {
+                    $user = User::find($userId);
+                    if ($user) {
+                        $userData = [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'username' => $user->username,
+                            'mobile' => $user->mobile,
+                            'mobile_country_code' => $user->mobile_country_code,
+                            'address' => $user->address,
+                            'provider_name' => $user->provider_name,
+                            'provider_id' => $user->provider_id,
+                            'email_verified_at' => $user->email_verified_at,
+                            'created_at' => $user->created_at,
+                            'updated_at' => $user->updated_at
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to get user from token: ' . $e->getMessage());
+            }
         }
         
         // Get user roles and permissions if using Spatie permissions package
@@ -159,7 +193,18 @@ class SocialController extends Controller
                 $client = new \Google_Client(['client_id' => config('services.google.client_id')]);
                 $payload = $client->verifyIdToken($token);
                 
+                // Log the payload for debugging
+                Log::info('Google API payload received', [
+                    'payload' => $payload,
+                    'email' => $payload['email'] ?? null,
+                    'name' => $payload['name'] ?? null,
+                    'sub' => $payload['sub'] ?? null,
+                    'picture' => $payload['picture'] ?? null,
+                    'verified_email' => $payload['email_verified'] ?? null
+                ]);
+                
                 if (!$payload) {
+                    Log::warning('Empty Google payload received');
                     return $this->errorResponse('Invalid Google token', null, 401);
                 }
                 
@@ -192,7 +237,18 @@ class SocialController extends Controller
                 return $this->errorResponse('Invalid Google token or OAuth configuration error', null, 401);
             }
 
+            // Log user creation attempt
+            Log::info('Attempting to find or create user with Google credentials', [
+                'email' => $googleUser->getEmail(),
+                'name' => $googleUser->getName(),
+                'provider' => 'google',
+                'provider_id' => $payload['sub'] ?? null
+            ]);
+            
             // Find or create user
+            // Note: We're using firstOrCreate to either:
+            // 1. Find an existing user with this email, OR
+            // 2. Create a new user if no user with this email exists
             $user = User::firstOrCreate(
                 ['email' => $googleUser->getEmail()],
                 [
@@ -200,8 +256,29 @@ class SocialController extends Controller
                     'username' => $this->generateUsername($googleUser->getNickname() ?? $googleUser->getName()),
                     'password' => bcrypt(Str::random(16)),
                     'email_verified_at' => now(), // Google emails are already verified
+                    'provider_name' => 'google',
+                    'provider_id' => $payload['sub'] ?? null,
                 ]
             );
+            
+            // Log whether user was found or created
+            Log::info($user->wasRecentlyCreated ? 'Created new user via Google' : 'Found existing user via Google', [
+                'user_id' => $user->id,
+                'was_created' => $user->wasRecentlyCreated
+            ]);
+            
+            // Update provider details if the user already existed but wasn't linked to Google
+            if (!$user->wasRecentlyCreated && (!$user->provider_name || $user->provider_name !== 'google')) {
+                Log::info('Updating existing user with Google provider details', [
+                    'user_id' => $user->id,
+                    'previous_provider' => $user->provider_name
+                ]);
+                
+                $user->update([
+                    'provider_name' => 'google',
+                    'provider_id' => $payload['sub'] ?? null
+                ]);
+            }
 
             // Assign app user role if new user
             if ($user->wasRecentlyCreated) {
@@ -210,6 +287,18 @@ class SocialController extends Controller
 
             // Generate JWT token
             $jwtToken = JWTAuth::fromUser($user);
+            Log::info('Generated JWT token for user', ['user_id' => $user->id]);
+            
+            // Force authentication to ensure the user is available in auth()->user()
+            auth('api')->setUser($user);
+            
+            // Verify auth was set correctly
+            $authUser = auth('api')->user();
+            Log::info('Auth state after setting user', [
+                'auth_check' => auth('api')->check(),
+                'auth_user_id' => $authUser ? $authUser->id : null,
+                'matches_expected_user' => $authUser && $authUser->id === $user->id
+            ]);
 
             return $this->respondWithToken($jwtToken, 'Successfully logged in with Google', 200);
         } catch (Exception $e) {
@@ -291,8 +380,18 @@ class SocialController extends Controller
                     'username' => $this->generateUsername($fbUser->getName()),
                     'password' => bcrypt(Str::random(16)),
                     'email_verified_at' => now(), // Facebook emails are considered verified
+                    'provider_name' => 'facebook',
+                    'provider_id' => $fbUserData->getId()
                 ]
             );
+            
+            // Update provider details if the user already existed but wasn't linked to Facebook
+            if (!$user->wasRecentlyCreated && (!$user->provider_name || $user->provider_name !== 'facebook')) {
+                $user->update([
+                    'provider_name' => 'facebook',
+                    'provider_id' => $fbUserData->getId()
+                ]);
+            }
 
             // Assign app user role if new user
             if ($user->wasRecentlyCreated) {
@@ -301,6 +400,9 @@ class SocialController extends Controller
 
             // Generate JWT token
             $jwtToken = JWTAuth::fromUser($user);
+            
+            // Force authentication to ensure the user is available in auth()->user()
+            auth('api')->setUser($user);
 
             return $this->respondWithToken($jwtToken, 'Successfully logged in with Facebook', 200);
         } catch (Exception $e) {
