@@ -671,6 +671,42 @@ Authorization: Bearer YOUR_JWT_TOKEN
 
 **Response:** Same format as List All Spotlights
 
+#### Get Latest Spotlights
+
+**Endpoint:** `GET /api/v1/spotlights/latest`
+
+**Description:** Retrieves the latest 10 spotlights from all categories, ordered by creation date (newest first).
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "name": "Example Spotlight",
+    "description": "Sample description",
+    "category": {
+      "id": 1,
+      "name": "Restaurants",
+      ...
+    },
+    "location": {
+      "id": 2,
+      "name": "Downtown",
+      ...
+    },
+    "tags": [...],
+    "rating": 4.5,
+    "is_active": true,
+    "is_featured": false,
+    "is_trending": false,
+    "contact_email": "example@example.com",
+    "contact_phone": "+1234567890",
+    "website_url": "https://example.com"
+  },
+  ...
+]
+```
+
 #### Get Spotlights by Category
 
 **Endpoint:** `GET /api/v1/spotlights/category/{category}`

@@ -94,6 +94,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/spotlights', [SpotlightController::class, 'index']);
     Route::get('/spotlights/featured', [SpotlightController::class, 'featured']);
     Route::get('/spotlights/trending', [SpotlightController::class, 'trending']);
+    Route::get('/spotlights/latest', [SpotlightController::class, 'latest']);
     Route::get('/spotlights/{spotlight}', [SpotlightController::class, 'show']);
     Route::get('/spotlights/category/{category}', [SpotlightController::class, 'byCategory']);
     Route::get('/spotlights/{spotlight}/attributes', [SpotlightController::class, 'attributes']);
