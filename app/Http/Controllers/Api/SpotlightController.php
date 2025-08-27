@@ -186,13 +186,14 @@ class SpotlightController extends Controller
      */
     public function featured(Request $request)
     {
-        $cacheKey = 'featured_spotlights_' . $request->input('per_page', 8);
+        $cacheKey = 'featured_spotlights_sorted_by_display_order_' . $request->input('per_page', 8);
 
         $paginator = Cache::remember($cacheKey, 3600, function() use ($request) {
             return Spotlight::with(['category', 'tags', 'location'])
                 ->where('is_featured', true)
                 // Filter by is_published
                 ->where('is_published', true)
+                ->orderBy('display_order', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->input('per_page', 8));
         });
@@ -670,7 +671,7 @@ class SpotlightController extends Controller
         ]);
 
         // Clear featured cache
-        Cache::forget('featured_spotlights_8');
+        Cache::forget('featured_spotlights_sorted_by_display_order_8');
 
         return response()->json([
             'message' => 'Spotlight marked as featured',
@@ -693,7 +694,7 @@ class SpotlightController extends Controller
         ]);
 
         // Clear featured cache
-        Cache::forget('featured_spotlights_8');
+        Cache::forget('featured_spotlights_sorted_by_display_order_8');
 
         return response()->json([
             'message' => 'Spotlight removed from featured',

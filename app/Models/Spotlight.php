@@ -39,6 +39,7 @@ class Spotlight extends Model
         'published_at',
         'average_rating',
         'review_count',
+        'display_order',
     ];
     
     /**
