@@ -353,6 +353,12 @@ class SpotlightResource extends Resource
                                             ->helperText('Featured spotlights appear in featured sections')
                                             ->default(false),
 
+                                        Forms\Components\TextInput::make('display_order')
+                                            ->label('Display Order')
+                                            ->helperText('Higher values appear first in featured spotlights list')
+                                            ->integer()
+                                            ->default(0),
+
                                         Forms\Components\Toggle::make('is_trending')
                                             ->label('Trending')
                                             ->helperText('Trending spotlights appear in trending sections')
@@ -607,6 +613,11 @@ class SpotlightResource extends Resource
                     ->label('Trending')
                     ->boolean()
                     ->sortable(),
+                    
+                Tables\Columns\TextColumn::make('display_order')
+                    ->label('Display Order')
+                    ->sortable()
+                    ->numeric(0),
 
                 Tables\Columns\TextColumn::make('rating')
                     ->sortable()
