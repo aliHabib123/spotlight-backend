@@ -20,7 +20,7 @@ class SpotlightAttributeDefinitionResource extends Resource
 
     public static function canAccess(): bool
     {
-        // Only super admin users can manage attribute definitions
+        // Only super admin and admin users can manage attribute definitions
         if (!Auth::check()) {
             return false;
         }
@@ -28,8 +28,8 @@ class SpotlightAttributeDefinitionResource extends Resource
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Check if the user has the super admin role
-        return $user->hasRole('super admin');
+        // Check if the user has the super admin or admin role
+        return $user->hasRole(['super admin', 'admin']);
     }
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-plus';
