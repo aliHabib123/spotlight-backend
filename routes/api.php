@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\SpotlightRatingController;
 use App\Http\Controllers\Api\SocialController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\FcmTokenController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -170,6 +171,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/{id}', [ProductController::class, 'show']);
         Route::get('/by-category/{id}', [ProductController::class, 'byCategory']);
     });
+    
+    // FCM Tokens - Public (for device registration)
+    Route::post('/fcm-tokens', [FcmTokenController::class, 'store']);
 });
 
 // Protected API routes

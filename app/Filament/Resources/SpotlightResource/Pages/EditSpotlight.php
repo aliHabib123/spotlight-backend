@@ -43,6 +43,12 @@ class EditSpotlight extends EditRecord
     
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        // Store send_notification preference in session for observer
+        if (isset($data['send_notification'])) {
+            session(['spotlight_send_notification' => $data['send_notification']]);
+            unset($data['send_notification']); // Remove from data since it's not a database field
+        }
+        
         // Handle video file upload
         if (isset($data['video_provider']) && $data['video_provider'] === 'self' && isset($data['video_file'])) {
             // Get the file path from Filament's temporary upload

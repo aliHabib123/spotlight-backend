@@ -8,6 +8,9 @@ use App\Providers\UsernameEmailAuthProvider;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Contracts\Foundation\Application;
+use App\Models\Spotlight;
+use App\Observers\SpotlightObserver;
+use App\Services\FirebaseNotificationService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +22,11 @@ class AppServiceProvider extends ServiceProvider
         // Register the service providers
         $this->app->register(FilamentBannerServiceProvider::class);
         $this->app->register(FilamentAdServiceProvider::class);
+
+        // Register Firebase notification service as singleton
+        $this->app->singleton(FirebaseNotificationService::class, function ($app) {
+            return new FirebaseNotificationService();
+        });
     }
 
     /**
@@ -33,5 +41,8 @@ class AppServiceProvider extends ServiceProvider
                 $config['model']
             );
         });
+
+        // Register model observers
+        Spotlight::observe(SpotlightObserver::class);
     }
 }

@@ -385,6 +385,46 @@ Authorization: Bearer YOUR_JWT_TOKEN
 }
 ```
 
+### FCM Token Registration
+
+**Endpoint:** `POST /api/v1/fcm-tokens`
+
+**Description:** Registers or updates a Firebase Cloud Messaging (FCM) token for push notifications. This endpoint can be used by both authenticated and guest users. If a token already exists, it will be updated with the new information.
+
+**Request:**
+```json
+{
+  "token": "fcm_token_string_here",
+  "device_id": "unique_device_identifier",
+  "platform": "android",
+  "user_id": 123
+}
+```
+
+**Parameters:**
+- `token` (required): The FCM token string
+- `device_id` (optional): Unique device identifier
+- `platform` (optional): Device platform, must be either "android" or "ios"
+- `user_id` (optional): User ID if the user is authenticated
+
+**Response:**
+```json
+{
+  "status": "success"
+}
+```
+
+**Error Response (422 Validation Error):**
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "token": ["The token field is required."],
+    "platform": ["The selected platform is invalid."]
+  }
+}
+```
+
 ## Public Endpoints
 
 ### Categories
