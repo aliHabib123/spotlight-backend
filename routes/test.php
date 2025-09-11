@@ -4,10 +4,6 @@ use Illuminate\Support\Facades\Route;
 use App\Services\FirebaseNotificationService;
 use App\Models\FcmToken;
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
 Route::get('/test-firebase', function () {
     $firebaseService = app(FirebaseNotificationService::class);
     

@@ -369,6 +369,12 @@ class SpotlightResource extends Resource
                                             ->label('Published')
                                             ->helperText('Only published spotlights are visible to the public')
                                             ->default(true),
+
+                                        Forms\Components\Toggle::make('send_notification')
+                                            ->label('Send Push Notification')
+                                            ->helperText('Send a push notification to all app users when this spotlight is created')
+                                            ->default(true)
+                                            ->dehydrated(false), // Don't save to database
                                     ]),
 
 
