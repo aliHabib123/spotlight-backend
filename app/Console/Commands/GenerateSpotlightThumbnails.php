@@ -15,7 +15,7 @@ class GenerateSpotlightThumbnails extends Command
      *
      * @var string
      */
-    protected $signature = 'spotlight:generate-thumbnails 
+    protected $signature = 'spotlight:generate-thumbnails
                             {--force : Force regeneration of existing thumbnails}
                             {--id= : Generate thumbnails for specific spotlight ID}';
 
@@ -34,13 +34,13 @@ class GenerateSpotlightThumbnails extends Command
         // Set memory limit for image processing
         ini_set('memory_limit', '512M');
         set_time_limit(300);
-        
+
         $this->info('Starting thumbnail generation for spotlights...');
         $this->info('Memory limit set to: ' . ini_get('memory_limit'));
 
         // Get spotlights to process
         $query = Spotlight::whereNotNull('featured_image');
-        
+
         if ($this->option('id')) {
             $query->where('id', $this->option('id'));
         }
@@ -65,9 +65,9 @@ class GenerateSpotlightThumbnails extends Command
             try {
                 $this->info("Processing spotlight ID: {$spotlight->id}");
                 $this->info("Featured image: {$spotlight->featured_image}");
-                
+
                 $result = $this->generateThumbnailsForSpotlight($spotlight);
-                
+
                 if ($result['processed']) {
                     $processed++;
                     $this->info("✓ Successfully processed spotlight {$spotlight->id}");
@@ -105,7 +105,7 @@ class GenerateSpotlightThumbnails extends Command
     {
         $this->info("  → Checking existing thumbnails...");
         $force = $this->option('force');
-        
+
         // Check if thumbnails already exist and force is not set
         if (!$force && $spotlight->thumbnail && $spotlight->thumbnail_1200x360 && $spotlight->thumbnail_1080x1080) {
             $this->info("  → Thumbnails already exist, skipping");
@@ -134,7 +134,7 @@ class GenerateSpotlightThumbnails extends Command
         // Get the original image
         $imagePath = Storage::disk('public')->path($spotlight->featured_image);
         $this->info("  → Image path: {$imagePath}");
-        
+
         if (!file_exists($imagePath)) {
             throw new \Exception("Image file does not exist at path: {$imagePath}");
         }
@@ -155,7 +155,7 @@ class GenerateSpotlightThumbnails extends Command
         } catch (\Exception $e) {
             throw new \Exception("Failed to create base thumbnail: " . $e->getMessage());
         }
-        
+
         $this->info("  → Saving base thumbnail...");
         // Save base thumbnail
         $baseThumbnailPath = $this->saveThumbnail($baseThumbnail, $spotlight->id, 'base');
@@ -163,15 +163,15 @@ class GenerateSpotlightThumbnails extends Command
         $this->info("  → Generating small thumbnail (25% of original)...");
         // Step 2: Generate small thumbnail (25% of original)
         $smallThumbnail = clone $originalImage;
-        $newWidth = max(1, (int)($originalImage->width() * 0.25));
-        $newHeight = max(1, (int)($originalImage->height() * 0.25));
+        $newWidth = max(1, (int)($originalImage->width() * 0.45));
+        $newHeight = max(1, (int)($originalImage->height() * 0.45));
         $smallThumbnail->resize($newWidth, $newHeight);
         $thumbnailSmallPath = $this->saveThumbnail($smallThumbnail, $spotlight->id, 'small');
 
         $this->info("  → Generating 1200x360 thumbnail...");
         // Step 3: Generate specific thumbnails from the base thumbnail
         $thumbnail1200x360 = $this->generateSpecificThumbnail($baseThumbnail, 1200, 360, $spotlight->id, '1200x360');
-        
+
         $this->info("  → Generating 1080x1080 thumbnail...");
         $thumbnail1080x1080 = $this->generateSpecificThumbnail($baseThumbnail, 1080, 1080, $spotlight->id, '1080x1080');
 
@@ -194,15 +194,15 @@ class GenerateSpotlightThumbnails extends Command
     private function saveThumbnail($image, int $spotlightId, string $size): string
     {
         $this->info("    → Saving {$size} thumbnail...");
-        
+
         // Generate filename
         $extension = 'jpg'; // Convert all thumbnails to JPG for consistency
         $filename = "thumbnails/spotlight_{$spotlightId}_{$size}.{$extension}";
-        
+
         // Ensure thumbnails directory exists
         $thumbnailsDir = Storage::disk('public')->path('thumbnails');
         $this->info("    → Thumbnails directory: {$thumbnailsDir}");
-        
+
         if (!is_dir($thumbnailsDir)) {
             $this->info("    → Creating thumbnails directory...");
             if (!mkdir($thumbnailsDir, 0755, true)) {
@@ -218,18 +218,18 @@ class GenerateSpotlightThumbnails extends Command
         // Save the thumbnail
         $fullPath = Storage::disk('public')->path($filename);
         $this->info("    → Saving to: {$fullPath}");
-        
+
         try {
             $image->toJpeg(85)->save($fullPath);
-            
+
             // Verify file was created
             if (!file_exists($fullPath)) {
                 throw new \Exception("File was not created after save operation");
             }
-            
+
             $fileSize = filesize($fullPath);
             $this->info("    → File saved successfully, size: {$fileSize} bytes");
-            
+
         } catch (\Exception $e) {
             throw new \Exception("Failed to save thumbnail: " . $e->getMessage());
         }
