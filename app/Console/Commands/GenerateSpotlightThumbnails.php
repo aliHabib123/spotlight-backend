@@ -33,7 +33,7 @@ class GenerateSpotlightThumbnails extends Command
     {
         // Set memory limit for image processing
         ini_set('memory_limit', '512M');
-        set_time_limit(300);
+        set_time_limit(600);
 
         $this->info('Starting thumbnail generation for spotlights...');
         $this->info('Memory limit set to: ' . ini_get('memory_limit'));
