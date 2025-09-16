@@ -47,6 +47,12 @@ class TestImageProcessing extends Command
         $this->info("   - Memory limit: " . ini_get('memory_limit'));
         $this->info("   - Max execution time: " . ini_get('max_execution_time'));
         
+        // Increase memory limit for image processing
+        $this->info("   - Setting memory limit to 512M...");
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+        $this->info("   - New memory limit: " . ini_get('memory_limit'));
+        
         // Check if image file exists
         $this->info("3. Checking image file:");
         $fullPath = Storage::disk('public')->path($imagePath);
