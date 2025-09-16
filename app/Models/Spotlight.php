@@ -36,6 +36,7 @@ class Spotlight extends Model
         'thumbnail',
         'thumbnail_1200x360',
         'thumbnail_1080x1080',
+        'thumbnail_small',
         'is_featured',
         'is_trending',
         'is_published',

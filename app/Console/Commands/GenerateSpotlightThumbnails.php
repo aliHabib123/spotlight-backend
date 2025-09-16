@@ -160,8 +160,16 @@ class GenerateSpotlightThumbnails extends Command
         // Save base thumbnail
         $baseThumbnailPath = $this->saveThumbnail($baseThumbnail, $spotlight->id, 'base');
 
+        $this->info("  → Generating small thumbnail (25% of original)...");
+        // Step 2: Generate small thumbnail (25% of original)
+        $smallThumbnail = clone $originalImage;
+        $newWidth = max(1, (int)($originalImage->width() * 0.25));
+        $newHeight = max(1, (int)($originalImage->height() * 0.25));
+        $smallThumbnail->resize($newWidth, $newHeight);
+        $thumbnailSmallPath = $this->saveThumbnail($smallThumbnail, $spotlight->id, 'small');
+
         $this->info("  → Generating 1200x360 thumbnail...");
-        // Step 2: Generate specific thumbnails from the base thumbnail
+        // Step 3: Generate specific thumbnails from the base thumbnail
         $thumbnail1200x360 = $this->generateSpecificThumbnail($baseThumbnail, 1200, 360, $spotlight->id, '1200x360');
         
         $this->info("  → Generating 1080x1080 thumbnail...");
@@ -173,6 +181,7 @@ class GenerateSpotlightThumbnails extends Command
             'thumbnail' => $baseThumbnailPath,
             'thumbnail_1200x360' => $thumbnail1200x360,
             'thumbnail_1080x1080' => $thumbnail1080x1080,
+            'thumbnail_small' => $thumbnailSmallPath,
         ]);
 
         $this->info("  → Completed successfully!");
