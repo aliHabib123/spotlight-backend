@@ -31,7 +31,12 @@ class GenerateSpotlightThumbnails extends Command
      */
     public function handle()
     {
+        // Set memory limit for image processing
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+        
         $this->info('Starting thumbnail generation for spotlights...');
+        $this->info('Memory limit set to: ' . ini_get('memory_limit'));
 
         // Get spotlights to process
         $query = Spotlight::whereNotNull('featured_image');
