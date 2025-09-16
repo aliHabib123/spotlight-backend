@@ -30,12 +30,12 @@ class SpotlightObserver
 
         // Check if notification should be sent based on session data
         $shouldSendNotification = session('spotlight_send_notification', true);
-        
+
         // Only send notification if the checkbox was enabled and spotlight is published
         if ($shouldSendNotification && $spotlight->is_published) {
             try {
                 $this->firebaseService->sendSpotlightNotification($spotlight);
-                
+
                 Log::info('Push notification sent for new spotlight', [
                     'spotlight_id' => $spotlight->id,
                     'spotlight_title' => $spotlight->name
@@ -48,7 +48,7 @@ class SpotlightObserver
                 ]);
             }
         }
-        
+
         // Clear the session data after use
         session()->forget('spotlight_send_notification');
     }
@@ -68,11 +68,11 @@ class SpotlightObserver
         if ($spotlight->isDirty('is_published') && $spotlight->is_published) {
             // Check if notification should be sent based on session data
             $shouldSendNotification = session('spotlight_send_notification', false);
-            
+
             if ($shouldSendNotification) {
                 try {
                     $this->firebaseService->sendSpotlightNotification($spotlight);
-                    
+
                     Log::info('Push notification sent for published spotlight', [
                         'spotlight_id' => $spotlight->id,
                         'spotlight_title' => $spotlight->name
@@ -85,7 +85,7 @@ class SpotlightObserver
                     ]);
                 }
             }
-            
+
             // Clear the session data after use
             session()->forget('spotlight_send_notification');
         }
@@ -120,14 +120,14 @@ class SpotlightObserver
             // Step 1: Create base thumbnail resized to 1200px width (proportional height)
             $baseThumbnail = clone $originalImage;
             $baseThumbnail->scaleDown(width: 1200);
-            
+
             // Save base thumbnail
             $baseThumbnailPath = $this->saveThumbnail($baseThumbnail, $spotlight->id, 'base');
 
-            // Step 2: Generate small thumbnail (25% of original)
+            // Step 2: Generate small thumbnail 45% of original)
             $smallThumbnail = clone $originalImage;
-            $newWidth = max(1, (int)($originalImage->width() * 0.25));
-            $newHeight = max(1, (int)($originalImage->height() * 0.25));
+            $newWidth = max(1, (int)($originalImage->width() * 0.45));
+            $newHeight = max(1, (int)($originalImage->height() * 0.45));
             $smallThumbnail->resize($newWidth, $newHeight);
             $thumbnailSmallPath = $this->saveThumbnail($smallThumbnail, $spotlight->id, 'small');
 
@@ -164,7 +164,7 @@ class SpotlightObserver
         // Generate filename
         $extension = 'jpg';
         $filename = "thumbnails/spotlight_{$spotlightId}_{$size}.{$extension}";
-        
+
         // Ensure thumbnails directory exists
         $thumbnailsDir = Storage::disk('public')->path('thumbnails');
         if (!is_dir($thumbnailsDir)) {
