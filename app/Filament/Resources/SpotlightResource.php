@@ -380,23 +380,16 @@ class SpotlightResource extends Resource
 
                             ]),
 
-                        Forms\Components\Tabs\Tab::make('Social Media')
+                        Forms\Components\Tabs\Tab::make('Contact & Social')
                             ->schema([
-                                // Contact Information section hidden as requested
-                                /* Forms\Components\Section::make('Contact Information')
+                                Forms\Components\Section::make('Contact Information')
                                     ->schema([
-                                        Forms\Components\TextInput::make('contact_email')
-                                            ->email()
-                                            ->maxLength(255),
-
-                                        Forms\Components\TextInput::make('contact_phone')
+                                        Forms\Components\TextInput::make('phone_number')
+                                            ->label('Phone Number')
                                             ->tel()
-                                            ->maxLength(50),
-
-                                        Forms\Components\TextInput::make('website')
-                                            ->url()
-                                            ->maxLength(255),
-                                    ]), */
+                                            ->maxLength(20)
+                                            ->helperText('Contact phone number for this spotlight'),
+                                    ]),
 
                                 Forms\Components\Section::make('Social Media')
                                     ->schema([
@@ -604,6 +597,11 @@ class SpotlightResource extends Resource
                 Tables\Columns\TextColumn::make('location.name')
                     ->label('Location')
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('phone_number')
+                    ->label('Phone')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\IconColumn::make('is_published')
                     ->label('Published')
