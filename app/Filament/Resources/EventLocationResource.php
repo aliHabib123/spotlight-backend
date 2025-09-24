@@ -28,53 +28,18 @@ class EventLocationResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Basic Information')
-                    ->schema([
-                        Forms\Components\TextInput::make('name')
-                            ->required()
-                            ->maxLength(255)
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) =>
-                                $operation === 'create' ? $set('slug', Str::slug($state)) : null
-                            ),
-                        Forms\Components\TextInput::make('slug')
-                            ->required()
-                            ->maxLength(255)
-                            ->unique(EventLocation::class, 'slug', ignoreRecord: true)
-                            ->rules(['alpha_dash']),
-                        Forms\Components\Toggle::make('is_active')
-                            ->default(true)
-                            ->helperText('Only active locations are available for events'),
-                    ])->columns(2),
-                    
-                Forms\Components\Section::make('Address Information')
-                    ->schema([
-                        Forms\Components\Textarea::make('address')
-                            ->label('Street Address')
-                            ->maxLength(500)
-                            ->columnSpanFull(),
-                        Forms\Components\TextInput::make('city')
-                            ->maxLength(255),
-                        Forms\Components\TextInput::make('country')
-                            ->maxLength(255),
-                    ])->columns(2),
-                    
-                Forms\Components\Section::make('Map & Coordinates')
-                    ->schema([
-                        Forms\Components\TextInput::make('latitude')
-                            ->numeric()
-                            ->step('any')
-                            ->helperText('Decimal degrees (e.g., 33.8886)'),
-                        Forms\Components\TextInput::make('longitude')
-                            ->numeric()
-                            ->step('any')
-                            ->helperText('Decimal degrees (e.g., 35.4955)'),
-                        Forms\Components\TextInput::make('map_url')
-                            ->url()
-                            ->maxLength(500)
-                            ->helperText('Google Maps URL or similar')
-                            ->columnSpanFull(),
-                    ])->columns(2),
+                Forms\Components\TextInput::make('name')
+                    ->required()
+                    ->maxLength(255)
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) =>
+                        $operation === 'create' ? $set('slug', Str::slug($state)) : null
+                    ),
+                Forms\Components\TextInput::make('slug')
+                    ->required()
+                    ->maxLength(255)
+                    ->unique(EventLocation::class, 'slug', ignoreRecord: true)
+                    ->rules(['alpha_dash']),
             ]);
     }
 

@@ -53,18 +53,27 @@ class EventResource extends Resource
                             ->maxLength(5000),
                     ])->columns(2),
                     
-                Forms\Components\Section::make('Location & Media')
+                Forms\Components\Section::make('Location & Contact')
                     ->schema([
                         Forms\Components\Select::make('event_location_id')
                             ->relationship('eventLocation', 'name')
                             ->searchable()
                             ->preload()
                             ->helperText('Select from existing locations. New locations must be created in the Event Locations section.'),
+                        Forms\Components\TextInput::make('phone_number')
+                            ->tel()
+                            ->maxLength(20)
+                            ->helperText('Contact phone number for this event'),
+                        Forms\Components\TextInput::make('map_url')
+                            ->url()
+                            ->maxLength(500)
+                            ->helperText('Google Maps URL or similar')
+                            ->columnSpanFull(),
                         Forms\Components\FileUpload::make('image')
                             ->image()
                             ->directory('events')
                             ->columnSpanFull(),
-                    ])->columns(1),
+                    ])->columns(2),
                     
                 Forms\Components\Section::make('Event Schedules')
                     ->schema([

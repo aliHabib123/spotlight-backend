@@ -18,6 +18,8 @@ class Event extends Model
         'description',
         'image',
         'event_location_id',
+        'map_url',
+        'phone_number',
         'event_category_id',
         'is_featured',
         'is_published',
@@ -76,5 +78,13 @@ class Event extends Model
         return $this->schedules()
             ->where('date', '>=', now()->toDateString())
             ->first();
+    }
+
+    /**
+     * Get phone number, return empty string if null.
+     */
+    public function getPhoneNumberAttribute($value): string
+    {
+        return $value ?? '';
     }
 }

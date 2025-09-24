@@ -115,13 +115,6 @@ Returns a paginated list of active event locations with their event counts.
       "id": 1,
       "name": "Beirut Souks",
       "slug": "beirut-souks",
-      "address": "Beirut Central District",
-      "city": "Beirut",
-      "country": "Lebanon",
-      "latitude": null,
-      "longitude": null,
-      "map_url": "https://maps.google.com/?q=Beirut+Souks",
-      "is_active": true,
       "created_at": "2025-09-24T19:13:32.000000Z",
       "updated_at": "2025-09-24T19:13:32.000000Z",
       "events_count": 1
@@ -204,6 +197,8 @@ Returns a paginated list of published events with their categories, locations, a
       "image": null,
       "event_category_id": 2,
       "event_location_id": 1,
+      "map_url": "https://maps.google.com/?q=Beirut+Souks",
+      "phone_number": "+961 1 234567",
       "is_featured": true,
       "is_published": true,
       "created_at": "2025-09-24T18:50:47.000000Z",
@@ -221,13 +216,6 @@ Returns a paginated list of published events with their categories, locations, a
         "id": 1,
         "name": "Beirut Souks",
         "slug": "beirut-souks",
-        "address": "Beirut Central District",
-        "city": "Beirut",
-        "country": "Lebanon",
-        "latitude": null,
-        "longitude": null,
-        "map_url": "https://maps.google.com/?q=Beirut+Souks",
-        "is_active": true,
         "created_at": "2025-09-24T19:13:32.000000Z",
         "updated_at": "2025-09-24T19:13:32.000000Z"
       },
@@ -338,6 +326,8 @@ Returns events filtered by category.
 - `image` (string|null) - Path to event image
 - `event_category_id` (integer) - Related category ID
 - `event_location_id` (integer|null) - Related location ID
+- `map_url` (string|null) - Map URL for the event location
+- `phone_number` (string) - Contact phone number (returns empty string if null)
 - `is_featured` (boolean) - Whether event is featured
 - `is_published` (boolean) - Whether event is publicly visible
 - `created_at` (datetime) - Creation timestamp
@@ -365,13 +355,6 @@ Returns events filtered by category.
 - `id` (integer) - Unique location identifier
 - `name` (string) - Location name
 - `slug` (string) - URL-friendly location identifier
-- `address` (string|null) - Street address
-- `city` (string|null) - City name
-- `country` (string|null) - Country name
-- `latitude` (decimal|null) - Geographic latitude
-- `longitude` (decimal|null) - Geographic longitude
-- `map_url` (string|null) - Link to map (Google Maps, etc.)
-- `is_active` (boolean) - Whether location is active
 - `created_at` (datetime) - Creation timestamp
 - `updated_at` (datetime) - Last update timestamp
 
