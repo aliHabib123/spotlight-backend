@@ -29,7 +29,16 @@ class SpotlightObserver
         }
 
         // Check if notification should be sent based on session data
-        $shouldSendNotification = session('spotlight_send_notification', true);
+        $shouldSendNotification = session('spotlight_send_notification', false);
+
+        // Log for debugging
+        Log::debug('Spotlight created - checking notification', [
+            'spotlight_id' => $spotlight->id,
+            'spotlight_title' => $spotlight->name,
+            'should_send_notification' => $shouldSendNotification,
+            'is_published' => $spotlight->is_published,
+            'will_send' => $shouldSendNotification && $spotlight->is_published
+        ]);
 
         // Only send notification if the checkbox was enabled and spotlight is published
         if ($shouldSendNotification && $spotlight->is_published) {
@@ -59,6 +68,16 @@ class SpotlightObserver
      */
     public function updated(Spotlight $spotlight): void
     {
+        // Log every update for debugging
+        Log::debug('Spotlight updated', [
+            'spotlight_id' => $spotlight->id,
+            'spotlight_title' => $spotlight->name,
+            'dirty_fields' => array_keys($spotlight->getDirty()),
+            'is_published_dirty' => $spotlight->isDirty('is_published'),
+            'current_is_published' => $spotlight->is_published,
+            'original_is_published' => $spotlight->getOriginal('is_published')
+        ]);
+
         // Generate thumbnails if featured image was changed
         if ($spotlight->isDirty('featured_image') && $spotlight->featured_image) {
             $this->generateThumbnails($spotlight);
@@ -68,6 +87,15 @@ class SpotlightObserver
         if ($spotlight->isDirty('is_published') && $spotlight->is_published) {
             // Check if notification should be sent based on session data
             $shouldSendNotification = session('spotlight_send_notification', false);
+            
+            // Log for debugging
+            Log::debug('Spotlight updated - checking notification for publication', [
+                'spotlight_id' => $spotlight->id,
+                'spotlight_title' => $spotlight->name,
+                'should_send_notification' => $shouldSendNotification,
+                'is_published' => $spotlight->is_published,
+                'will_send' => $shouldSendNotification
+            ]);
 
             if ($shouldSendNotification) {
                 try {
