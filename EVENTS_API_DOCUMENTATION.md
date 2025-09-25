@@ -181,8 +181,12 @@ Returns a paginated list of published events with their categories, locations, a
 **Parameters:**
 - `per_page` (optional, integer, max: 50) - Number of items per page (default: 15)
 - `category_id` (optional, integer) - Filter by event category ID
+- `location_id` (optional, integer) - Filter by event location ID
 - `featured` (optional, boolean) - Filter featured events only
 - `upcoming` (optional, boolean) - Filter events with future schedules only
+- `month` (optional, integer, 1-12) - Filter by month (uses current year if year not specified)
+- `day` (optional, integer, 1-31) - Filter by day (requires month, uses current year if year not specified)
+- `year` (optional, integer, 2020-2050) - Filter by year (defaults to current year)
 
 **Response:**
 ```json
@@ -398,6 +402,41 @@ curl "https://api.example.com/v1/events/featured?limit=10"
 ### Get events at Beirut Souks
 ```bash
 curl "https://api.example.com/v1/event-locations/1/events"
+```
+
+### Get events by location ID
+```bash
+curl "https://api.example.com/v1/events?location_id=1"
+```
+
+### Get events in October (current year)
+```bash
+curl "https://api.example.com/v1/events?month=10"
+```
+
+### Get events on October 15th (current year)
+```bash
+curl "https://api.example.com/v1/events?month=10&day=15"
+```
+
+### Get events in December 2025
+```bash
+curl "https://api.example.com/v1/events?month=12&year=2025"
+```
+
+### Get events on New Year's Day 2025
+```bash
+curl "https://api.example.com/v1/events?month=1&day=1&year=2025"
+```
+
+### Get events in 2025 only
+```bash
+curl "https://api.example.com/v1/events?year=2025"
+```
+
+### Get featured events at a specific location in October
+```bash
+curl "https://api.example.com/v1/events?featured=1&location_id=1&month=10"
 ```
 
 ### Get event details
