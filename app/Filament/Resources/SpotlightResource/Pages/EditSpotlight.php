@@ -44,9 +44,13 @@ class EditSpotlight extends EditRecord
     protected function mutateFormDataBeforeSave(array $data): array
     {
         // Store send_notification preference in session for observer
+        // Always set the session value - if checkbox is unchecked, it won't be in $data
+        $sendNotification = isset($data['send_notification']) ? $data['send_notification'] : false;
+        session(['spotlight_send_notification' => $sendNotification]);
+        
+        // Remove from data since it's not a database field
         if (isset($data['send_notification'])) {
-            session(['spotlight_send_notification' => $data['send_notification']]);
-            unset($data['send_notification']); // Remove from data since it's not a database field
+            unset($data['send_notification']);
         }
         
         // Handle video file upload

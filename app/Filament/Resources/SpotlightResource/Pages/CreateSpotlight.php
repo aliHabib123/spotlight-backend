@@ -20,9 +20,19 @@ class CreateSpotlight extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // Store send_notification preference in session for observer
+        // Always set the session value - if checkbox is unchecked, it won't be in $data
+        $sendNotification = isset($data['send_notification']) ? $data['send_notification'] : false;
+        session(['spotlight_send_notification' => $sendNotification]);
+        
+        // Log for debugging
+        \Illuminate\Support\Facades\Log::debug('Spotlight create - notification setting', [
+            'send_notification_in_form' => isset($data['send_notification']) ? $data['send_notification'] : 'not_set',
+            'final_notification_setting' => $sendNotification
+        ]);
+        
+        // Remove from data since it's not a database field
         if (isset($data['send_notification'])) {
-            session(['spotlight_send_notification' => $data['send_notification']]);
-            unset($data['send_notification']); // Remove from data since it's not a database field
+            unset($data['send_notification']);
         }
         
         // Handle video file upload
