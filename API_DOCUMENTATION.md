@@ -639,6 +639,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
       "is_trending": false,
       "contact_email": "example@example.com",
       "contact_phone": "+1234567890",
+      "phone_number": "+961 1 234567",
       "website_url": "https://example.com"
     },
     ...
@@ -673,6 +674,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
     "is_featured": false,
     "contact_email": "example@example.com",
     "contact_phone": "+1234567890",
+    "phone_number": "+961 1 234567",
     "website_url": "https://example.com"
   },
   "user_rating": { // Only present if user is authenticated
@@ -741,6 +743,7 @@ Authorization: Bearer YOUR_JWT_TOKEN
     "is_trending": false,
     "contact_email": "example@example.com",
     "contact_phone": "+1234567890",
+    "phone_number": "+961 1 234567",
     "website_url": "https://example.com"
   },
   ...
@@ -1403,6 +1406,7 @@ The following endpoints require authentication and appropriate permissions:
   "rating": 4.5,
   "contact_email": "contact@example.com",
   "contact_phone": "+1234567890",
+  "phone_number": "+961 1 234567",
   "website_url": "https://example.com",
   "tags": [1, 3, 5],
   "attributes": {
@@ -1411,6 +1415,10 @@ The following endpoints require authentication and appropriate permissions:
   }
 }
 ```
+
+**Field Notes:**
+- `phone_number` (optional): Contact phone number for the spotlight. Returns empty string ("") when null/empty.
+- All other fields follow standard validation rules.
 
 **Response:** Newly created spotlight object
 

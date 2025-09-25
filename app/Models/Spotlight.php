@@ -28,6 +28,7 @@ class Spotlight extends Model
         'location_id',
         'user_id',
         'contact_info',
+        'phone_number',
         'social_links',
         'opening_hours',
         'video_url',
@@ -236,5 +237,16 @@ class Spotlight extends Model
     public function getAverageRatingAttribute($value)
     {
         return $value ?? 0;
+    }
+    
+    /**
+     * Get the phone number attribute.
+     *
+     * @param  mixed  $value
+     * @return string
+     */
+    public function getPhoneNumberAttribute($value)
+    {
+        return $value ?? '';
     }
 }

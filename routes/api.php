@@ -24,6 +24,9 @@ use App\Http\Controllers\Api\SpotlightRatingController;
 use App\Http\Controllers\Api\SocialController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\Api\EventCategoryController;
+use App\Http\Controllers\Api\EventLocationController;
 use App\Http\Controllers\FcmTokenController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -99,6 +102,24 @@ Route::prefix('v1')->group(function () {
     Route::get('/spotlights/{spotlight}', [SpotlightController::class, 'show']);
     Route::get('/spotlights/category/{category}', [SpotlightController::class, 'byCategory']);
     Route::get('/spotlights/{spotlight}/attributes', [SpotlightController::class, 'attributes']);
+
+    // Event Categories
+    Route::get('/event-categories', [EventCategoryController::class, 'index']);
+    Route::get('/event-categories/all', [EventCategoryController::class, 'all']);
+    Route::get('/event-categories/{category}', [EventCategoryController::class, 'show']);
+
+    // Event Locations
+    Route::get('/event-locations', [EventLocationController::class, 'index']);
+    Route::get('/event-locations/all', [EventLocationController::class, 'all']);
+    Route::get('/event-locations/{location}', [EventLocationController::class, 'show']);
+    Route::get('/event-locations/{location}/events', [EventLocationController::class, 'events']);
+
+    // Events
+    Route::get('/events', [EventController::class, 'index']);
+    Route::get('/events/featured', [EventController::class, 'featured']);
+    Route::get('/events/upcoming', [EventController::class, 'upcoming']);
+    Route::get('/events/{event}', [EventController::class, 'show']);
+    Route::get('/events/category/{category}', [EventController::class, 'byCategory']);
 
     // Tags
     Route::get('/tags', [TagController::class, 'index']);
