@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class EventCategoryResource extends Resource
 {
@@ -23,6 +24,17 @@ class EventCategoryResource extends Resource
     protected static ?string $navigationGroup = 'Events';
 
     protected static ?int $navigationSort = 1;
+
+    public static function canAccess(): bool
+    {
+        // Only admins and super admins can access this resource
+        if (Auth::check()) {
+            $user = Auth::user();
+            return $user->hasAnyRole(['super admin', 'admin']);
+        }
+        return false;
+    }
+
 
     public static function form(Form $form): Form
     {

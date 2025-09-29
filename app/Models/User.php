@@ -173,4 +173,20 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     {
         return $this->hasMany(SpotlightRating::class);
     }
+    
+    /**
+     * Get the tours that this user has created.
+     */
+    public function tours(): HasMany
+    {
+        return $this->hasMany(Tour::class);
+    }
+    
+    /**
+     * Get the tour ratings that this user has created.
+     */
+    public function tourRatings(): HasMany
+    {
+        return $this->hasMany(TourRating::class);
+    }
 }

@@ -14,6 +14,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class SpotlightResource extends Resource
 {
@@ -24,6 +25,17 @@ class SpotlightResource extends Resource
     protected static ?string $navigationGroup = 'Spotlights';
 
     protected static ?int $navigationSort = 1;
+
+    public static function canAccess(): bool
+    {
+        // Only admins and super admins can access this resource
+        if (Auth::check()) {
+            $user = Auth::user();
+            return $user->hasAnyRole(['super admin', 'admin']);
+        }
+        return false;
+    }
+
 
     protected static ?string $recordTitleAttribute = 'name';
 

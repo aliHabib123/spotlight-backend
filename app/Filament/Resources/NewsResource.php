@@ -24,6 +24,16 @@ class NewsResource extends Resource
     protected static ?string $navigationGroup = 'News Management';
     
     protected static ?int $navigationSort = 2;
+    
+    public static function canAccess(): bool
+    {
+        // Only admins and super admins can access this resource
+        if (Auth::check()) {
+            $user = Auth::user();
+            return $user->hasAnyRole(['super admin', 'admin']);
+        }
+        return false;
+    }
 
     public static function form(Form $form): Form
     {

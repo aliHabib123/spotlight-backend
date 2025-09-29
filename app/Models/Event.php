@@ -19,6 +19,7 @@ class Event extends Model
         'image',
         'event_location_id',
         'map_url',
+        'booking_link',
         'phone_number',
         'event_category_id',
         'is_featured',

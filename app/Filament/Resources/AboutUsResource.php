@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class AboutUsResource extends Resource
 {
@@ -22,6 +23,17 @@ class AboutUsResource extends Resource
     protected static ?string $navigationGroup = 'Content Management';
     
     protected static ?int $navigationSort = 20;
+
+    public static function canAccess(): bool
+    {
+        // Only admins and super admins can access this resource
+        if (Auth::check()) {
+            $user = Auth::user();
+            return $user->hasAnyRole(['super admin', 'admin']);
+        }
+        return false;
+    }
+
     
     protected static ?string $modelLabel = 'About Us Page';
     

@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class EventResource extends Resource
 {
@@ -23,6 +24,16 @@ class EventResource extends Resource
     protected static ?string $navigationGroup = 'Events';
     
     protected static ?int $navigationSort = 2;
+    
+    public static function canAccess(): bool
+    {
+        // Only admins and super admins can access this resource
+        if (Auth::check()) {
+            $user = Auth::user();
+            return $user->hasAnyRole(['super admin', 'admin']);
+        }
+        return false;
+    }
 
     public static function form(Form $form): Form
     {
@@ -68,6 +79,11 @@ class EventResource extends Resource
                             ->url()
                             ->maxLength(500)
                             ->helperText('Google Maps URL or similar')
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('booking_link')
+                            ->url()
+                            ->maxLength(500)
+                            ->helperText('External booking/registration URL')
                             ->columnSpanFull(),
                         Forms\Components\FileUpload::make('image')
                             ->image()

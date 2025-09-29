@@ -27,6 +27,8 @@ use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\EventCategoryController;
 use App\Http\Controllers\Api\EventLocationController;
+use App\Http\Controllers\Api\TourController;
+use App\Http\Controllers\Api\TourLocationController;
 use App\Http\Controllers\FcmTokenController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -120,6 +122,16 @@ Route::prefix('v1')->group(function () {
     Route::get('/events/upcoming', [EventController::class, 'upcoming']);
     Route::get('/events/{event}', [EventController::class, 'show']);
     Route::get('/events/category/{category}', [EventController::class, 'byCategory']);
+    
+    // Tour Locations
+    Route::get('/tour-locations', [TourLocationController::class, 'index']);
+    Route::get('/tour-locations/{id}', [TourLocationController::class, 'show']);
+    Route::get('/tour-locations/{id}/tours', [TourLocationController::class, 'tours']);
+    
+    // Tours
+    Route::get('/tours', [TourController::class, 'index']);
+    Route::get('/tours/{id}', [TourController::class, 'show']);
+    Route::get('/tours/{id}/ratings', [TourController::class, 'getRatings']);
 
     // Tags
     Route::get('/tags', [TagController::class, 'index']);
@@ -199,6 +211,17 @@ Route::prefix('v1')->group(function () {
 
 // Protected API routes
 Route::middleware([\App\Http\Middleware\JsonApiAuthentication::class . ':api'])->prefix('v1')->group(function () {
+    // Tour Rating
+    Route::post('/tours/{id}/rate', [TourController::class, 'rate']);
+    Route::get('/tours/{id}/rating', [TourController::class, 'checkRating']);
+    
+    // Tour Management (for Tour Admins)
+    Route::post('/tours', [TourController::class, 'store']);
+    Route::put('/tours/{id}', [TourController::class, 'update']);
+    Route::delete('/tours/{id}', [TourController::class, 'destroy']);
+    
+    // Tour Approval (for Admins only)
+    Route::patch('/tours/{id}/approve', [TourController::class, 'approve']);
     // News management
     Route::post('/news', [NewsController::class, 'store']);
     Route::put('/news/{id}', [NewsController::class, 'update']);

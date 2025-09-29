@@ -25,6 +25,17 @@ class SpotlightCategoryResource extends Resource
 
     protected static ?int $navigationSort = 10;
 
+    public static function canAccess(): bool
+    {
+        // Only admins and super admins can access this resource
+        if (Auth::check()) {
+            $user = Auth::user();
+            return $user->hasAnyRole(['super admin', 'admin']);
+        }
+        return false;
+    }
+
+
     /**
      * Check if the current user is a super admin
      *
