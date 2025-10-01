@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\NewsCategoryResource\Pages;
-use App\Filament\Resources\NewsCategoryResource\RelationManagers;
-use App\Models\NewsCategory;
+use App\Filament\Resources\TourLocationResource\Pages;
+use App\Filament\Resources\TourLocationResource\RelationManagers;
+use App\Models\TourLocation;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -12,56 +12,56 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 
-class NewsCategoryResource extends Resource
+class TourLocationResource extends Resource
 {
-    protected static ?string $model = NewsCategory::class;
+    protected static ?string $model = TourLocation::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-tag';
-    
-    protected static ?string $navigationGroup = 'News Management';
-    
-    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationIcon = 'heroicon-o-map-pin';
 
+    protected static ?string $navigationGroup = 'Tours Management';
+    
+    protected static ?int $navigationSort = 2;
+    
     public static function canAccess(): bool
     {
-        // Only admins and super admins can access this resource
+        // Only show Tour Locations to super admins and admins, not to tour admins
         if (Auth::check()) {
             $user = Auth::user();
             return $user->hasAnyRole(['super admin', 'admin']);
         }
         return false;
     }
-
+    
+    // Keep for backward compatibility
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Category Details')
+                Forms\Components\Section::make('Location Details')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) => 
-                                $operation === 'create' ? $set('slug', \Illuminate\Support\Str::slug($state)) : null),
-                        
+                            ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
+                                if ($operation !== 'create') {
+                                    return;
+                                }
+                                
+                                $set('slug', \Illuminate\Support\Str::slug($state));
+                            }),
                         Forms\Components\TextInput::make('slug')
-                            ->required()
+                            ->unique(ignoreRecord: true)
                             ->maxLength(255)
-                            ->unique(ignoreRecord: true),
-                            
-                        Forms\Components\Textarea::make('description')
-                            ->maxLength(500)
-                            ->columnSpanFull(),
-                            
-                        Forms\Components\Toggle::make('is_active')
-                            ->label('Active')
-                            ->default(true),
-                    ])->columns(2),
+                            ->helperText('Auto-generated from name, can be customized if needed'),
+                    ])
             ]);
     }
 
@@ -72,26 +72,17 @@ class NewsCategoryResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-                    
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable()
                     ->sortable(),
-                    
-                Tables\Columns\TextColumn::make('news_count')
-                    ->label('News Count')
-                    ->counts('news')
+                Tables\Columns\TextColumn::make('tours_count')
+                    ->counts('tours')
+                    ->label('Tours')
                     ->sortable(),
-                    
-                Tables\Columns\IconColumn::make('is_active')
-                    ->label('Active')
-                    ->boolean()
-                    ->sortable(),
-                    
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
@@ -120,9 +111,9 @@ class NewsCategoryResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListNewsCategories::route('/'),
-            'create' => Pages\CreateNewsCategory::route('/create'),
-            'edit' => Pages\EditNewsCategory::route('/{record}/edit'),
+            'index' => Pages\ListTourLocations::route('/'),
+            'create' => Pages\CreateTourLocation::route('/create'),
+            'edit' => Pages\EditTourLocation::route('/{record}/edit'),
         ];
     }
 }

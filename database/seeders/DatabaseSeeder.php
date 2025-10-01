@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         // Seed roles, permissions and admin users
         $this->call([
             RolesAndPermissionsSeeder::class,
+            TourRolesAndPermissionsSeeder::class,
         ]);
     }
 }

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
@@ -25,6 +26,17 @@ class UserResource extends Resource
     
     protected static ?int $navigationSort = 1;
 
+    public static function canAccess(): bool
+    {
+        // Only admins and super admins can access this resource
+        if (Auth::check()) {
+            $user = Auth::user();
+            return $user->hasAnyRole(['super admin', 'admin']);
+        }
+        return false;
+    }
+
+
     public static function form(Form $form): Form
     {
         return $form
@@ -33,7 +45,19 @@ class UserResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->required()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->live()
+                            ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
+                                if ($operation === 'create' && filled($state)) {
+                                    // Only auto-generate username when creating a new record
+                                    $username = strtolower(str_replace(' ', '.', $state));
+                                    $set('username', $username);
+                                }
+                            }),
+                        Forms\Components\TextInput::make('username')
+                            ->required()
+                            ->maxLength(255)
+                            ->unique(ignoreRecord: true),
                         Forms\Components\TextInput::make('email')
                             ->email()
                             ->required()
@@ -70,6 +94,9 @@ class UserResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('username')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('email')

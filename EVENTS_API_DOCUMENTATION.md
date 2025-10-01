@@ -202,6 +202,7 @@ Returns a paginated list of published events with their categories, locations, a
       "event_category_id": 2,
       "event_location_id": 1,
       "map_url": "https://maps.google.com/?q=Beirut+Souks",
+      "booking_link": "https://example.com/book-tickets",
       "phone_number": "+961 1 234567",
       "is_featured": true,
       "is_published": true,
@@ -331,6 +332,7 @@ Returns events filtered by category.
 - `event_category_id` (integer) - Related category ID
 - `event_location_id` (integer|null) - Related location ID
 - `map_url` (string|null) - Map URL for the event location
+- `booking_link` (string|null) - External booking/registration URL for the event
 - `phone_number` (string) - Contact phone number (returns empty string if null)
 - `is_featured` (boolean) - Whether event is featured
 - `is_published` (boolean) - Whether event is publicly visible

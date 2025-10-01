@@ -27,6 +27,17 @@ class AdResource extends Resource
     protected static ?string $navigationGroup = 'Content Management';
     
     protected static ?int $navigationSort = 21;
+
+    public static function canAccess(): bool
+    {
+        // Only admins and super admins can access this resource
+        if (Auth::check()) {
+            $user = Auth::user();
+            return $user->hasAnyRole(['super admin', 'admin']);
+        }
+        return false;
+    }
+
     
     public static function getNavigationBadge(): ?string
     {
