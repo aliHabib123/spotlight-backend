@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Carbon;
 
 class TourController extends Controller
 {
@@ -24,7 +25,7 @@ class TourController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Tour::query()->with(['location', 'images', 'dayAvailabilities'])->where('active', true);
+        $query = Tour::query()->with(['location', 'images', 'dayAvailabilities', 'dateRanges'])->where('active', true);
         
         // Filter by location
         if ($request->has('location_id')) {
@@ -38,6 +39,28 @@ class TourController extends Controller
         
         if ($request->has('max_price')) {
             $query->where('price', '<=', $request->max_price);
+        }
+        
+        // Filter by specific date (YYYY-MM-DD)
+        if ($request->filled('date')) {
+            try {
+                $date = Carbon::parse($request->date)->format('Y-m-d');
+                $dow = strtolower(Carbon::parse($request->date)->format('l'));
+                // Must be available on that day of week
+                $query->whereHas('dayAvailabilities', function (Builder $q) use ($dow) {
+                    $q->where('day', $dow);
+                });
+                // And within any defined date range (or no ranges defined)
+                $query->where(function (Builder $q) use ($date) {
+                    $q->whereDoesntHave('dateRanges')
+                      ->orWhereHas('dateRanges', function (Builder $qr) use ($date) {
+                          $qr->where('start_date', '<=', $date)
+                             ->where('end_date', '>=', $date);
+                      });
+                });
+            } catch (\Exception $e) {
+                // Ignore invalid date format; no filter applied
+            }
         }
         
         // Sort options
@@ -98,7 +121,23 @@ class TourController extends Controller
             'tour_location_id' => 'required|exists:tour_locations,id',
             'available_days' => 'required|array|min:1',
             'available_days.*' => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'date_ranges' => 'nullable|array',
+            'date_ranges.*.start_date' => 'required_with:date_ranges|date',
+            'date_ranges.*.end_date' => 'required_with:date_ranges|date',
         ]);
+
+        // Additional validation: ensure each date range has end_date >= start_date
+        $validator->after(function ($validator) use ($request) {
+            if (is_array($request->date_ranges ?? null)) {
+                foreach ($request->date_ranges as $idx => $range) {
+                    $start = $range['start_date'] ?? null;
+                    $end = $range['end_date'] ?? null;
+                    if ($start && $end && strtotime($end) < strtotime($start)) {
+                        $validator->errors()->add("date_ranges.$idx.end_date", 'The end date must be a date after or equal to the start date.');
+                    }
+                }
+            }
+        });
         
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
@@ -115,12 +154,24 @@ class TourController extends Controller
         
         $tour->save();
         
+        // Add date ranges if provided
+        if (is_array($request->date_ranges ?? null)) {
+            foreach ($request->date_ranges as $range) {
+                if (!empty($range['start_date']) && !empty($range['end_date'])) {
+                    $tour->dateRanges()->create([
+                        'start_date' => $range['start_date'],
+                        'end_date' => $range['end_date'],
+                    ]);
+                }
+            }
+        }
+        
         // Add available days
         foreach ($request->available_days as $day) {
             $tour->dayAvailabilities()->create(['day' => $day]);
         }
         
-        return new TourResource($tour->load(['location', 'dayAvailabilities']));
+        return new TourResource($tour->load(['location', 'dayAvailabilities', 'dateRanges']));
     }
     
     /**
@@ -131,7 +182,7 @@ class TourController extends Controller
      */
     public function show($id)
     {
-        $tour = Tour::with(['location', 'images', 'dayAvailabilities'])
+        $tour = Tour::with(['location', 'images', 'dayAvailabilities', 'dateRanges'])
                    ->where('active', true)
                    ->findOrFail($id);
         
@@ -176,7 +227,23 @@ class TourController extends Controller
             'tour_location_id' => 'sometimes|required|exists:tour_locations,id',
             'available_days' => 'sometimes|required|array|min:1',
             'available_days.*' => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'date_ranges' => 'nullable|array',
+            'date_ranges.*.start_date' => 'required_with:date_ranges|date',
+            'date_ranges.*.end_date' => 'required_with:date_ranges|date',
         ]);
+
+        // Additional validation: ensure each date range has end_date >= start_date
+        $validator->after(function ($validator) use ($request) {
+            if (is_array($request->date_ranges ?? null)) {
+                foreach ($request->date_ranges as $idx => $range) {
+                    $start = $range['start_date'] ?? null;
+                    $end = $range['end_date'] ?? null;
+                    if ($start && $end && strtotime($end) < strtotime($start)) {
+                        $validator->errors()->add("date_ranges.$idx.end_date", 'The end date must be a date after or equal to the start date.');
+                    }
+                }
+            }
+        });
         
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
@@ -199,7 +266,22 @@ class TourController extends Controller
             }
         }
         
-        return new TourResource($tour->load(['location', 'dayAvailabilities']));
+        // Update date ranges if provided
+        if ($request->has('date_ranges')) {
+            $tour->dateRanges()->delete();
+            if (is_array($request->date_ranges)) {
+                foreach ($request->date_ranges as $range) {
+                    if (!empty($range['start_date']) && !empty($range['end_date'])) {
+                        $tour->dateRanges()->create([
+                            'start_date' => $range['start_date'],
+                            'end_date' => $range['end_date'],
+                        ]);
+                    }
+                }
+            }
+        }
+        
+        return new TourResource($tour->load(['location', 'dayAvailabilities', 'dateRanges']));
     }
     
     /**

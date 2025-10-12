@@ -6,6 +6,7 @@ use App\Filament\Resources\TourResource\Pages;
 use App\Filament\Resources\TourResource\RelationManagers;
 use App\Filament\Resources\TourResource\RelationManagers\ImagesRelationManager;
 use App\Filament\Resources\TourResource\RelationManagers\DayAvailabilitiesRelationManager;
+use App\Filament\Resources\TourResource\RelationManagers\DateRangesRelationManager;
 use App\Models\Tour;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -343,6 +344,7 @@ class TourResource extends Resource
         return [
             ImagesRelationManager::class,
             DayAvailabilitiesRelationManager::class,
+            DateRangesRelationManager::class,
             // Removed RatingsRelationManager - ratings should be handled through the API only
             // RatingsRelationManager::class,
         ];

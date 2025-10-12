@@ -30,6 +30,7 @@ class TourResource extends JsonResource
             'available_days' => $this->whenLoaded('dayAvailabilities', function() {
                 return $this->dayAvailabilities->pluck('day');
             }),
+            'date_ranges' => TourDateRangeResource::collection($this->whenLoaded('dateRanges')),
             'average_rating' => $this->average_rating,
             'review_count' => $this->review_count,
             'created_at' => $this->created_at,

@@ -68,6 +68,14 @@ class Tour extends Model
     }
     
     /**
+     * Get the date ranges when this tour is available
+     */
+    public function dateRanges(): HasMany
+    {
+        return $this->hasMany(TourDateRange::class)->orderBy('start_date');
+    }
+    
+    /**
      * Get the ratings for this tour
      */
     public function ratings(): HasMany
