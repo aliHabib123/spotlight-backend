@@ -11,6 +11,7 @@
 - `min_price` (optional): Filter by minimum price
 - `max_price` (optional): Filter by maximum price
 - `date` (optional): Filter tours available on a specific calendar date (YYYY-MM-DD). Applies both weekday availability and within any defined date ranges (if any).
+- `is_featured` (optional): Filter featured tours. Accepts 1/0, true/false. Alias: `featured`.
 - `sort` (optional): Sort by a specific criteria. Options:
   - `price_low_high`: Price low to high
   - `price_high_low`: Price high to low
@@ -26,6 +27,7 @@
 /api/v1/tours?min_price=50&max_price=200
 /api/v1/tours?sort=price_low_high&location_id=2
 /api/v1/tours?date=2025-03-15
+/api/v1/tours?is_featured=1
 ```
 
 **Response:**
@@ -43,6 +45,7 @@
       "capacity": 20,
       "display_order": 0,
       "active": true,
+      "is_featured": false,
       "location": {
         "id": 1,
         "name": "Downtown",
@@ -142,6 +145,7 @@
     "capacity": 20,
     "display_order": 0,
     "active": true,
+    "is_featured": true,
     "location": {
       "id": 1,
       "name": "Downtown",

@@ -190,6 +190,12 @@ class TourResource extends Resource
                                     ->default(false)
                                     // Allow toggling only for admins and super admins
                                     ->disabled(fn () => !(Auth::check() && (Auth::user()->hasRole('super admin') || Auth::user()->hasRole('admin')))),
+                                Forms\Components\Toggle::make('is_featured')
+                                    ->label('Featured')
+                                    ->helperText('Feature this tour to highlight it in the app')
+                                    ->default(false)
+                                    // Only visible to admins and super admins
+                                    ->visible(fn () => Auth::check() && (Auth::user()->hasRole('super admin') || Auth::user()->hasRole('admin'))),
                                 Forms\Components\Select::make('user_id')
                                     ->relationship('user', 'name')
                                     ->searchable()
@@ -231,6 +237,13 @@ class TourResource extends Resource
                     ->formatStateUsing(fn (bool $state): string => $state ? 'Approved' : 'Pending Approval')
                     ->color(fn (bool $state): string => $state ? 'success' : 'warning')
                     ->sortable(),
+                Tables\Columns\IconColumn::make('is_featured')
+                    ->label('Featured')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-star')
+                    ->falseIcon('heroicon-o-star')
+                    ->trueColor('warning')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('display_order')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')
@@ -258,6 +271,12 @@ class TourResource extends Resource
                         '0' => 'Pending Approval',
                     ])
                     ->label('Status'),
+                Tables\Filters\SelectFilter::make('is_featured')
+                    ->options([
+                        '1' => 'Featured',
+                        '0' => 'Not Featured',
+                    ])
+                    ->label('Featured'),
                 Tables\Filters\Filter::make('price_range')
                     ->form([
                         Forms\Components\Grid::make(2)

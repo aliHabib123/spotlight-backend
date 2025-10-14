@@ -41,6 +41,18 @@ class TourController extends Controller
             $query->where('price', '<=', $request->max_price);
         }
         
+        // Filter by featured status
+        if ($request->filled('featured')) {
+            $val = $request->featured;
+            $isFeatured = in_array($val, [1, '1', true, 'true'], true);
+            $query->where('is_featured', $isFeatured);
+        }
+        if ($request->filled('is_featured')) {
+            $val = $request->is_featured;
+            $isFeatured = in_array($val, [1, '1', true, 'true'], true);
+            $query->where('is_featured', $isFeatured);
+        }
+        
         // Filter by specific date (YYYY-MM-DD)
         if ($request->filled('date')) {
             try {
