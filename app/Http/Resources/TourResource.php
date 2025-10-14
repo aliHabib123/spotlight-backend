@@ -25,11 +25,13 @@ class TourResource extends JsonResource
             'capacity' => $this->capacity,
             'display_order' => $this->display_order,
             'active' => $this->active,
+            'is_featured' => $this->is_featured,
             'location' => new TourLocationResource($this->whenLoaded('location')),
             'images' => TourImageResource::collection($this->whenLoaded('images')),
             'available_days' => $this->whenLoaded('dayAvailabilities', function() {
                 return $this->dayAvailabilities->pluck('day');
             }),
+            'date_ranges' => TourDateRangeResource::collection($this->whenLoaded('dateRanges')),
             'average_rating' => $this->average_rating,
             'review_count' => $this->review_count,
             'created_at' => $this->created_at,

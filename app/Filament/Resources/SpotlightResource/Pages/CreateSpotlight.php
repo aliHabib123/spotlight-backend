@@ -21,12 +21,14 @@ class CreateSpotlight extends CreateRecord
     {
         // Store send_notification preference in session for observer
         // Always set the session value - if checkbox is unchecked, it won't be in $data
-        $sendNotification = isset($data['send_notification']) ? $data['send_notification'] : false;
+        $sendNotification = array_key_exists('send_notification', $data)
+            ? (bool) $data['send_notification']
+            : true; // align with UI default
         session(['spotlight_send_notification' => $sendNotification]);
         
         // Log for debugging
         \Illuminate\Support\Facades\Log::debug('Spotlight create - notification setting', [
-            'send_notification_in_form' => isset($data['send_notification']) ? $data['send_notification'] : 'not_set',
+            'send_notification_in_form' => array_key_exists('send_notification', $data) ? $data['send_notification'] : 'not_set',
             'final_notification_setting' => $sendNotification
         ]);
         

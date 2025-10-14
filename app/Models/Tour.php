@@ -23,6 +23,7 @@ class Tour extends Model
         'tour_location_id',
         'display_order',
         'active',
+        'is_featured',
         'user_id',
     ];
     
@@ -31,6 +32,7 @@ class Tour extends Model
         'kids_price' => 'decimal:2',
         'infant_price' => 'decimal:2',
         'active' => 'boolean',
+        'is_featured' => 'boolean',
         'capacity' => 'integer',
         'display_order' => 'integer',
     ];
@@ -65,6 +67,14 @@ class Tour extends Model
     public function dayAvailabilities(): HasMany
     {
         return $this->hasMany(TourDayAvailability::class);
+    }
+    
+    /**
+     * Get the date ranges when this tour is available
+     */
+    public function dateRanges(): HasMany
+    {
+        return $this->hasMany(TourDateRange::class)->orderBy('start_date');
     }
     
     /**

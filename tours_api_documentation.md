@@ -10,11 +10,14 @@
 - `location_id` (optional): Filter by tour location ID
 - `min_price` (optional): Filter by minimum price
 - `max_price` (optional): Filter by maximum price
-- `sort` (optional): Sort by specific criteria. Available options:
-  - `price_asc`: Price low to high
-  - `price_desc`: Price high to low
-  - `newest`: Recently added (default)
+- `date` (optional): Filter tours available on a specific calendar date (YYYY-MM-DD). Applies both weekday availability and within any defined date ranges (if any).
+- `is_featured` (optional): Filter featured tours. Accepts 1/0, true/false. Alias: `featured`.
+- `sort` (optional): Sort by a specific criteria. Options:
+  - `price_low_high`: Price low to high
+  - `price_high_low`: Price high to low
+  - `newest`: Recently added
   - `rating`: Highest rated
+  Default ordering (when `sort` is not provided) is by `display_order` ascending.
 - `per_page` (optional): Number of items per page (default: 15)
 - `page` (optional): Page number (default: 1)
 
@@ -22,7 +25,9 @@
 ```
 /api/v1/tours?location_id=1
 /api/v1/tours?min_price=50&max_price=200
-/api/v1/tours?sort=price_asc&location_id=2
+/api/v1/tours?sort=price_low_high&location_id=2
+/api/v1/tours?date=2025-03-15
+/api/v1/tours?is_featured=1
 ```
 
 **Response:**
@@ -40,6 +45,7 @@
       "capacity": 20,
       "display_order": 0,
       "active": true,
+      "is_featured": false,
       "location": {
         "id": 1,
         "name": "Downtown",
@@ -69,6 +75,10 @@
         "monday",
         "wednesday",
         "friday"
+      ],
+      "date_ranges": [
+        {"id": 10, "start_date": "2025-01-01", "end_date": "2025-02-15"},
+        {"id": 11, "start_date": "2025-03-10", "end_date": "2025-11-12"}
       ],
       "average_rating": 4.5,
       "review_count": 12,
@@ -135,6 +145,7 @@
     "capacity": 20,
     "display_order": 0,
     "active": true,
+    "is_featured": true,
     "location": {
       "id": 1,
       "name": "Downtown",
@@ -164,6 +175,10 @@
       "monday",
       "wednesday",
       "friday"
+    ],
+    "date_ranges": [
+      {"id": 10, "start_date": "2025-01-01", "end_date": "2025-02-15"},
+      {"id": 11, "start_date": "2025-03-10", "end_date": "2025-11-12"}
     ],
     "average_rating": 4.5,
     "review_count": 12,
