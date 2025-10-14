@@ -385,8 +385,7 @@ class SpotlightResource extends Resource
                                         Forms\Components\Toggle::make('send_notification')
                                             ->label('Send Push Notification')
                                             ->helperText('Send a push notification to all app users when this spotlight is created')
-                                            ->default(true)
-                                            ->dehydrated(false), // Don't save to database
+                                            ->default(true),
                                     ]),
 
 

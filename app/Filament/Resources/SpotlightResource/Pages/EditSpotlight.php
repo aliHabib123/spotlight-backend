@@ -45,7 +45,9 @@ class EditSpotlight extends EditRecord
     {
         // Store send_notification preference in session for observer
         // Always set the session value - if checkbox is unchecked, it won't be in $data
-        $sendNotification = isset($data['send_notification']) ? $data['send_notification'] : false;
+        $sendNotification = array_key_exists('send_notification', $data)
+            ? (bool) $data['send_notification']
+            : true; // align with UI default
         session(['spotlight_send_notification' => $sendNotification]);
         
         // Remove from data since it's not a database field
