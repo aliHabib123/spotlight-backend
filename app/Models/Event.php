@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Builder;
 
 class Event extends Model
@@ -87,5 +88,21 @@ class Event extends Model
     public function getPhoneNumberAttribute($value): string
     {
         return $value ?? '';
+    }
+
+    /**
+     * Get the users who saved this event.
+     */
+    public function savedBy(): HasManyThrough
+    {
+        return $this->hasManyThrough(User::class, SavedEvent::class, 'event_id', 'id', 'id', 'user_id');
+    }
+
+    /**
+     * Get saved event records for this event.
+     */
+    public function savedRecords(): HasMany
+    {
+        return $this->hasMany(SavedEvent::class);
     }
 }

@@ -130,6 +130,22 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
     }
 
     /**
+     * Get the events that this user has saved.
+     */
+    public function savedEvents(): HasMany
+    {
+        return $this->hasMany(SavedEvent::class);
+    }
+
+    /**
+     * Get the saved event entities directly.
+     */
+    public function savedEventEntities(): HasManyThrough
+    {
+        return $this->hasManyThrough(Event::class, SavedEvent::class, 'user_id', 'id', 'id', 'event_id');
+    }
+
+    /**
      * Get the identifier that will be stored in the subject claim of the JWT.
      *
      * @return mixed

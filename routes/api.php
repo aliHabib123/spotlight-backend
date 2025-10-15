@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SavedNewsController;
 use App\Http\Controllers\Api\SavedSpotlightController;
+use App\Http\Controllers\Api\SavedEventController;
 use App\Http\Controllers\Api\ShippingAddressController;
 use App\Http\Controllers\Api\ShopCategoryController;
 use App\Http\Controllers\Api\ShopController;
@@ -283,6 +284,14 @@ Route::middleware([\App\Http\Middleware\JsonApiAuthentication::class . ':api'])-
         Route::post('/{id}', [SavedNewsController::class, 'save']); // Save a news item
         Route::delete('/{id}', [SavedNewsController::class, 'unsave']); // Unsave a news item
         Route::get('/{id}/check', [SavedNewsController::class, 'check']); // Check if a news item is saved
+    });
+
+    // Saved Events (authenticated users only)
+    Route::prefix('saved-events')->group(function () {
+        Route::get('/', [SavedEventController::class, 'index']); // List user's saved events
+        Route::post('/{id}', [SavedEventController::class, 'save']); // Save an event
+        Route::delete('/{id}', [SavedEventController::class, 'unsave']); // Unsave an event
+        Route::get('/{id}/check', [SavedEventController::class, 'check']); // Check if an event is saved
     });
     
     // Spotlight Ratings (authenticated users only)
