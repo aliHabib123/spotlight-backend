@@ -319,6 +319,92 @@ Returns events filtered by category.
 }
 ```
 
+### Saved Events (Protected)
+These endpoints allow authenticated users to save, list, check, and remove saved events.
+
+Authentication: Provide a valid JWT in the `Authorization: Bearer <token>` header.
+
+#### List Saved Events
+**GET** `/saved-events`
+
+Returns a paginated list of events saved by the authenticated user.
+
+**Parameters:**
+- `per_page` (optional, integer, max: 50) - Items per page (default: 10)
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "current_page": 1,
+    "data": [
+      // Event objects (same structure as in the Events list, with category, location, schedules)
+    ],
+    "per_page": 10,
+    "total": 0,
+    "last_page": 1
+  }
+}
+```
+
+#### Save Event
+**POST** `/saved-events/{id}`
+
+Saves the specified event for the authenticated user.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Event saved successfully",
+  "data": {
+    "id": 123,
+    "user_id": 45,
+    "event_id": 1,
+    "created_at": "2025-10-15T14:00:00Z",
+    "updated_at": "2025-10-15T14:00:00Z"
+  }
+}
+```
+
+If the event is already saved:
+```json
+{
+  "status": "success",
+  "message": "Event is already saved",
+  "data": { /* existing saved record */ }
+}
+```
+
+#### Unsave Event
+**DELETE** `/saved-events/{id}`
+
+Removes the saved event for the authenticated user.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Event unsaved successfully"
+}
+```
+
+#### Check If Event Is Saved
+**GET** `/saved-events/{id}/check`
+
+Returns whether the given event is saved by the authenticated user.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "is_saved": true
+  }
+}
+```
+
 ---
 
 ## Data Models
