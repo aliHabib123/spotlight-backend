@@ -18,7 +18,7 @@ class EventCategoryController extends Controller
         
         $query = EventCategory::where('is_active', true)
             ->withCount(['events' => function ($q) {
-                $q->where('is_published', true);
+                $q->published()->upcoming();
             }])
             ->orderBy('name');
 
@@ -43,7 +43,7 @@ class EventCategoryController extends Controller
     {
         $category = EventCategory::where('is_active', true)
             ->withCount(['events' => function ($q) {
-                $q->where('is_published', true);
+                $q->published()->upcoming();
             }])
             ->findOrFail($id);
 
@@ -60,7 +60,7 @@ class EventCategoryController extends Controller
     {
         $categories = EventCategory::where('is_active', true)
             ->withCount(['events' => function ($q) {
-                $q->where('is_published', true);
+                $q->published()->upcoming();
             }])
             ->orderBy('name')
             ->get();

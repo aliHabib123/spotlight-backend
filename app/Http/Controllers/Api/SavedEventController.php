@@ -32,6 +32,8 @@ class SavedEventController extends Controller
 
         $savedEvents = Event::whereIn('id', $eventIds)
             ->with(['eventCategory', 'eventLocation', 'schedules'])
+            ->published()
+            ->upcoming()
             ->paginate($perPage);
 
         return response()->json([

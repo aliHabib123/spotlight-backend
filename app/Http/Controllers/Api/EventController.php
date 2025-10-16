@@ -22,7 +22,6 @@ class EventController extends Controller
             'category_id' => 'integer|exists:event_categories,id',
             'location_id' => 'integer|exists:event_locations,id',
             'featured' => 'boolean',
-            'upcoming' => 'boolean',
             'month' => 'integer|min:1|max:12',
             'day' => 'integer|min:1|max:31',
             'year' => 'integer|min:2020|max:2050',
@@ -32,6 +31,7 @@ class EventController extends Controller
         
         $query = Event::with(['eventCategory', 'eventLocation', 'schedules'])
             ->published()
+            ->upcoming()
             ->orderBy('created_at', 'desc');
 
         // Filter by category
@@ -49,12 +49,7 @@ class EventController extends Controller
             $query->featured();
         }
 
-        // Filter by upcoming events only
-        if ($request->has('upcoming') && $request->upcoming) {
-            $query->whereHas('schedules', function ($q) {
-                $q->where('date', '>=', now()->toDateString());
-            });
-        }
+        // Past events are excluded by default using scopeUpcoming()
 
         // Filter by date (month, day, year)
         if ($request->has('month') || $request->has('day') || $request->has('year')) {
@@ -120,6 +115,7 @@ class EventController extends Controller
 
         $events = Event::with(['eventCategory', 'eventLocation', 'schedules'])
             ->published()
+            ->upcoming()
             ->featured()
             ->orderBy('created_at', 'desc')
             ->limit($limit)
@@ -140,9 +136,7 @@ class EventController extends Controller
 
         $events = Event::with(['eventCategory', 'eventLocation', 'schedules'])
             ->published()
-            ->whereHas('schedules', function ($q) {
-                $q->where('date', '>=', now()->toDateString());
-            })
+            ->upcoming()
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
@@ -165,6 +159,7 @@ class EventController extends Controller
 
         $events = Event::with(['eventCategory', 'eventLocation', 'schedules'])
             ->published()
+            ->upcoming()
             ->where('event_category_id', $categoryId)
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);

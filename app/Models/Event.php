@@ -9,9 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Builder;
 
-class Event extends Model
-{
-    use HasFactory;
+    class Event extends Model
+    {
+        use HasFactory;
 
     protected $fillable = [
         'title',
@@ -70,6 +70,24 @@ class Event extends Model
     public function scopeFeatured(Builder $query): Builder
     {
         return $query->where('is_featured', true);
+    }
+
+    /**
+     * Scope a query to only include events with at least one upcoming schedule.
+     * Upcoming means a schedule with a future date, or today with an end_time not yet passed.
+     */
+    public function scopeUpcoming(Builder $query): Builder
+    {
+        $today = now()->toDateString();
+        $nowTime = now()->format('H:i:s');
+
+        return $query->whereHas('schedules', function ($q) use ($today, $nowTime) {
+            $q->whereDate('date', '>', $today)
+              ->orWhere(function ($q2) use ($today, $nowTime) {
+                  $q2->whereDate('date', '=', $today)
+                     ->where('end_time', '>=', $nowTime);
+              });
+        });
     }
 
     /**
