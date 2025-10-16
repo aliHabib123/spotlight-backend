@@ -19,6 +19,7 @@ Most endpoints are public and don't require authentication. Write operations (if
 **GET** `/event-categories`
 
 Returns a paginated list of active event categories with their event counts.
+Counts include only published events that have upcoming schedules (past events are excluded).
 
 **Parameters:**
 - `per_page` (optional, integer, max: 50) - Number of items per page (default: 15)
@@ -52,6 +53,7 @@ Returns a paginated list of active event categories with their event counts.
 **GET** `/event-categories/all`
 
 Returns all active event categories without pagination.
+Note: `events_count` includes only published events with upcoming schedules.
 
 **Response:**
 ```json
@@ -75,7 +77,7 @@ Returns all active event categories without pagination.
 ### Get Event Category Details
 **GET** `/event-categories/{id}`
 
-Returns details of a specific event category.
+Returns details of a specific event category. `events_count` includes only published events with upcoming schedules.
 
 **Response:**
 ```json
@@ -102,6 +104,7 @@ Returns details of a specific event category.
 **GET** `/event-locations`
 
 Returns a paginated list of active event locations with their event counts.
+Counts include only published events that have upcoming schedules (past events are excluded).
 
 **Parameters:**
 - `per_page` (optional, integer, max: 50) - Number of items per page (default: 15)
@@ -142,7 +145,7 @@ Returns details of a specific event location.
 ### Get Events by Location
 **GET** `/event-locations/{id}/events`
 
-Returns all events at a specific location.
+Returns upcoming, published events at a specific location. Past events are excluded by default.
 
 **Parameters:**
 - `per_page` (optional, integer, max: 50) - Number of items per page (default: 15)
@@ -176,14 +179,13 @@ Returns all events at a specific location.
 ### List All Events
 **GET** `/events`
 
-Returns a paginated list of published events with their categories, locations, and schedules.
+Returns a paginated list of published, upcoming events with their categories, locations, and schedules. Past events are excluded by default.
 
 **Parameters:**
 - `per_page` (optional, integer, max: 50) - Number of items per page (default: 15)
 - `category_id` (optional, integer) - Filter by event category ID
 - `location_id` (optional, integer) - Filter by event location ID
 - `featured` (optional, boolean) - Filter featured events only
-- `upcoming` (optional, boolean) - Filter events with future schedules only
 - `month` (optional, integer, 1-12) - Filter by month (uses current year if year not specified)
 - `day` (optional, integer, 1-31) - Filter by day (requires month, uses current year if year not specified)
 - `year` (optional, integer, 2020-2050) - Filter by year (defaults to current year)
@@ -273,7 +275,7 @@ Returns details of a specific event with all related data.
 ### Get Featured Events
 **GET** `/events/featured`
 
-Returns featured events only.
+Returns featured, upcoming events only. Past events are excluded.
 
 **Parameters:**
 - `limit` (optional, integer, max: 20) - Number of events to return (default: 5)
@@ -286,10 +288,12 @@ Returns events that have future schedules.
 **Parameters:**
 - `limit` (optional, integer, max: 50) - Number of events to return (default: 10)
 
+Note: All listing endpoints already exclude past events by default. This endpoint is a convenience feed limited by `limit`.
+
 ### Get Events by Category
 **GET** `/events/category/{category_id}`
 
-Returns events filtered by category.
+Returns upcoming, published events filtered by category. Past events are excluded.
 
 **Parameters:**
 - `per_page` (optional, integer, max: 50) - Number of items per page (default: 15)
@@ -477,9 +481,9 @@ When request parameters are invalid:
 
 ## Usage Examples
 
-### Get all upcoming festivals
+### Get all festivals in a category (upcoming by default)
 ```bash
-curl "https://api.example.com/v1/events?upcoming=1&category_id=2"
+curl "https://api.example.com/v1/events?category_id=2"
 ```
 
 ### Get featured events (limit 10)
@@ -540,7 +544,7 @@ curl "https://api.example.com/v1/events/1"
 
 2. **Relationships**: All event endpoints include related data (category, location, schedules) by default to minimize API calls.
 
-3. **Filtering**: Events can be filtered by category, featured status, and whether they have upcoming schedules.
+3. **Filtering**: Events are upcoming by default (past events are excluded). You can further filter by category, location, featured status, and by specific dates (month/day/year).
 
 4. **Pagination**: Most list endpoints support pagination with customizable page size (max 50 items).
 

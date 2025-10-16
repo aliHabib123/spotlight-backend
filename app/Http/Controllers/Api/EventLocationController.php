@@ -17,7 +17,7 @@ class EventLocationController extends Controller
         $perPage = min($request->get('per_page', 15), 50);
         
         $query = EventLocation::withCount(['events' => function ($q) {
-                $q->where('is_published', true);
+                $q->published()->upcoming();
             }])
             ->orderBy('name');
 
@@ -41,7 +41,7 @@ class EventLocationController extends Controller
     public function show(string $id): JsonResponse
     {
         $location = EventLocation::withCount(['events' => function ($q) {
-                $q->where('is_published', true);
+                $q->published()->upcoming();
             }])
             ->findOrFail($id);
 
@@ -57,7 +57,7 @@ class EventLocationController extends Controller
     public function all(): JsonResponse
     {
         $locations = EventLocation::withCount(['events' => function ($q) {
-                $q->where('is_published', true);
+                $q->published()->upcoming();
             }])
             ->orderBy('name')
             ->get();
@@ -81,6 +81,7 @@ class EventLocationController extends Controller
         $events = $location->events()
             ->with(['eventCategory', 'eventLocation', 'schedules'])
             ->where('is_published', true)
+            ->upcoming()
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
 
