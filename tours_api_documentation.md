@@ -280,7 +280,7 @@
 
 #### List Tour Ratings
 
-**Endpoint:** `GET /api/v1/tour-ratings/{tour}`
+**Endpoint:** `GET /api/v1/tours/{id}/ratings`
 
 **Authentication:** Optional
 
@@ -305,29 +305,16 @@
         "id": 2,
         "name": "John Doe"
       }
-    },
-    {
-      "id": 2,
-      "user_id": 3,
-      "tour_id": 1,
-      "rating": 4,
-      "comment": "Great tour but a bit expensive",
-      "created_at": "2025-10-01T13:45:12.000000Z",
-      "updated_at": "2025-10-01T13:45:12.000000Z",
-      "user": {
-        "id": 3,
-        "name": "Jane Smith"
-      }
     }
   ],
-  "average_rating": 4.5,
-  "review_count": 2
+  "links": { /* pagination links */ },
+  "meta": { /* pagination meta */ }
 }
 ```
 
 #### Rate a Tour
 
-**Endpoint:** `POST /api/v1/tour-ratings/{tour}`
+**Endpoint:** `POST /api/v1/tours/{id}/rate`
 
 **Authentication:** Required (JWT)
 
@@ -363,240 +350,229 @@
 }
 ```
 
-#### Update a Rating
+<!-- Update/Delete via separate endpoints are not available; use POST /tours/{id}/rate to create or update. -->
 
-**Endpoint:** `PUT /api/v1/tour-ratings/{tour}`
+#### Check if User Has Rated a Tour
+
+**Endpoint:** `GET /api/v1/tours/{id}/rating`
 
 **Authentication:** Required (JWT)
 
-**Description:** Updates the authenticated user's existing rating for a tour.
+**Description:** Returns the authenticated user's rating for a tour if it exists; otherwise 404.
 
-**Parameters:**
-- `tour`: Tour ID or slug
+**Response (200):**
+```json
+{
+  "data": {
+    "id": 3,
+    "user_id": 1,
+    "tour_id": 1,
+    "rating": 4,
+    "comment": "Good tour, but started a bit late",
+    "created_at": "2025-10-01T14:30:45.000000Z",
+    "updated_at": "2025-10-01T14:35:20.000000Z"
+  }
+}
+```
+
+**Response (404):**
+```json
+{
+  "message": "No rating found"
+}
+```
+
+
+### Tour Bookings
+
+#### Create a Booking
+
+**Endpoint:** `POST /api/v1/tours/{id}/book`
+
+**Authentication:** Optional (guests allowed)
+
+**Description:** Creates a new booking for a tour on a specific date. Enforces tour weekday availability, optional date ranges, and capacity.
 
 **Request Body:**
 ```json
 {
-  "rating": 4,           // Required, integer from 1-5
-  "comment": "Good tour, but started a bit late" // Optional
+  "selected_date": "2025-11-10",   // Required, YYYY-MM-DD, today or later
+  "adults": 2,                      // Required, >= 1
+  "kids": 1,                        // Optional, >= 0
+  "infants": 0,                     // Optional, >= 0
+  "full_name": "Jane Doe",        // Required
+  "email": "jane@example.com",    // Required, valid email
+  "phone": "+96170000000",        // Required
+  "special_requests": "Vegetarian meal" // Optional
 }
 ```
 
 **Response:**
 ```json
 {
-  "status": "success",
-  "message": "Rating updated successfully",
   "data": {
-    "id": 3,
-    "user_id": 1,
+    "id": 12,
+    "booking_number": "TB-251110-ABC123",
     "tour_id": 1,
-    "rating": 4,
-    "comment": "Good tour, but started a bit late",
-    "created_at": "2025-10-01T14:30:45.000000Z",
-    "updated_at": "2025-10-01T14:35:20.000000Z"
-  },
-  "average_rating": 4.3,
-  "review_count": 3
+    "user_id": 5,                 // null for guest
+    "selected_date": "2025-11-10",
+    "adults": 2,
+    "kids": 1,
+    "infants": 0,
+    "total_price": "250.00",
+    "status": "pending",
+    "full_name": "Jane Doe",
+    "email": "jane@example.com",
+    "phone": "+96170000000",
+    "special_requests": "Vegetarian meal",
+    "created_at": "2025-10-19T16:30:45.000000Z",
+    "updated_at": "2025-10-19T16:30:45.000000Z",
+    "tour": { /* TourResource when loaded */ }
+  }
 }
 ```
 
-#### Delete a Rating
+#### Get Booking Status
 
-**Endpoint:** `DELETE /api/v1/tour-ratings/{tour}`
+**Endpoint:** `GET /api/v1/tour-bookings/status/{bookingNumber}`
+
+**Authentication:** Not required
+
+**Description:** Retrieves a booking by its booking number.
+
+**Response:** Same format as Create a Booking (single booking resource).
+
+#### List My Bookings
+
+**Endpoint:** `GET /api/v1/tour-bookings`
 
 **Authentication:** Required (JWT)
 
-**Description:** Deletes the authenticated user's rating for a tour.
-
 **Parameters:**
-- `tour`: Tour ID or slug
-
-**Response:**
-```json
-{
-  "status": "success",
-  "message": "Rating deleted successfully"
-}
-```
-
-#### Check if User Has Rated a Tour
-
-**Endpoint:** `GET /api/v1/tour-ratings/{tour}/check`
-
-**Authentication:** Required (JWT)
-
-**Description:** Checks if the authenticated user has already rated a tour.
-
-**Parameters:**
-- `tour`: Tour ID or slug
-
-**Response:**
-```json
-{
-  "status": "success",
-  "rated": true,
-  "data": {
-    "id": 3,
-    "user_id": 1,
-    "tour_id": 1,
-    "rating": 4,
-    "comment": "Good tour, but started a bit late",
-    "created_at": "2025-10-01T14:30:45.000000Z",
-    "updated_at": "2025-10-01T14:35:20.000000Z"
-  },
-  "average_rating": 4.3,
-  "review_count": 3
-}
-```
-
-If the user hasn't rated the tour:
-
-```json
-{
-  "status": "success",
-  "rated": false,
-  "average_rating": 4.5,
-  "review_count": 2
-}
-```
-
-### Saved Tours
-
-#### List Saved Tours
-
-**Endpoint:** `GET /api/v1/saved-tours`
-
-**Authentication:** Required (JWT)
-
-**Description:** Retrieves a paginated list of tours saved by the authenticated user.
-
-**Parameters:**
-- `per_page` (optional): Number of items per page (default: 10)
+- `per_page` (optional): Items per page (default: 10)
 - `page` (optional): Page number (default: 1)
 
 **Response:**
 ```json
 {
-  "status": "success",
-  "data": {
-    "current_page": 1,
-    "data": [
-      {
-        "id": 1,
-        "title": "Historic Downtown Tour",
-        "slug": "historic-downtown-tour",
-        "description": "<p>Explore the historic downtown area with our guided tour...</p>",
-        "price": "100.00",
-        "kids_price": "50.00",
-        "infant_price": "0.00",
-        "capacity": 20,
-        "display_order": 0,
-        "active": true,
-        "location": {
-          "id": 1,
-          "name": "Downtown",
-          "slug": "downtown"
-        },
-        "images": [
-          {
-            "id": 1,
-            "image_path": "tours/01K6E2WBQ8S1XW25NE7HHQEE61.png",
-            "image_url": "http://127.0.0.1:8000/storage/tours/01K6E2WBQ8S1XW25NE7HHQEE61.png"
-          }
-        ],
-        "available_days": ["monday", "wednesday", "friday"],
-        "average_rating": 4.5,
-        "review_count": 12
-      }
-    ],
-    "first_page_url": "http://localhost/api/v1/saved-tours?page=1",
-    "from": 1,
-    "last_page": 1,
-    "last_page_url": "http://localhost/api/v1/saved-tours?page=1",
-    "links": [...],
-    "next_page_url": null,
-    "path": "http://localhost/api/v1/saved-tours",
-    "per_page": 10,
-    "prev_page_url": null,
-    "to": 1,
-    "total": 1
-  }
+  "data": [
+    {
+      "id": 12,
+      "booking_number": "TB-251110-ABC123",
+      "tour_id": 1,
+      "user_id": 5,
+      "selected_date": "2025-11-10",
+      "adults": 2,
+      "kids": 1,
+      "infants": 0,
+      "total_price": "250.00",
+      "status": "pending",
+      "full_name": "Jane Doe",
+      "email": "jane@example.com",
+      "phone": "+96170000000",
+      "special_requests": "Vegetarian meal",
+      "created_at": "2025-10-19T16:30:45.000000Z",
+      "updated_at": "2025-10-19T16:30:45.000000Z",
+      "tour": { /* TourResource when loaded */ }
+    }
+  ],
+  "links": { /* pagination links */ },
+  "meta": { /* pagination meta */ }
 }
 ```
 
-#### Save a Tour
+#### Get a Booking
 
-**Endpoint:** `POST /api/v1/saved-tours/{tour}`
+**Endpoint:** `GET /api/v1/tour-bookings/{id}`
 
 **Authentication:** Required (JWT)
 
-**Description:** Saves a tour for the authenticated user.
+**Description:** Retrieves a specific booking that belongs to the authenticated user.
 
-**Parameters:**
-- `tour`: Tour ID or slug
+**Response:** Same format as Create a Booking (single booking resource).
+
+#### Cancel a Booking
+
+**Endpoint:** `PATCH /api/v1/tour-bookings/{id}/cancel`
+
+**Authentication:** Required (JWT)
+
+**Description:** Cancels a future booking that belongs to the authenticated user.
 
 **Response:**
 ```json
 {
-  "status": "success",
-  "message": "Tour saved successfully",
   "data": {
-    "user_id": 1,
-    "tour_id": 1,
-    "updated_at": "2025-10-01T15:25:00.000000Z",
-    "created_at": "2025-10-01T15:25:00.000000Z",
-    "id": 1
+    "id": 12,
+    "status": "canceled",
+    "booking_number": "TB-251110-ABC123",
+    "selected_date": "2025-11-10",
+    /* other fields as above */
   }
 }
 ```
 
-#### Unsave a Tour
+#### Validation & Rules
 
-**Endpoint:** `DELETE /api/v1/saved-tours/{tour}`
+- **Date rules:** `selected_date` must be today or later; must match an available weekday of the tour (`tour_day_availabilities`). If `tour_date_ranges` exist, the date must fall within at least one range.
+- **Capacity:** Enforced per tour per date inside a transaction. Occupancy = `adults + kids` (infants do not consume capacity by default). If over capacity, the request is rejected.
+- **Pricing:** `total_price = (adults * price) + (kids * (kids_price or price)) + (infants * (infant_price or 0))`.
+- **Status:** New bookings are created with `pending`. Users can cancel future bookings, which sets status to `canceled`.
 
-**Authentication:** Required (JWT)
+### Tour Booking Payments
 
-**Description:** Removes a tour from the authenticated user's saved tours.
+#### Create Payment Link (Whish)
 
-**Parameters:**
-- `tour`: Tour ID or slug
+**Endpoint:** `POST /api/v1/tour-bookings/{bookingNumber}/payment-link`
+
+**Authentication:** Not required
+
+**Description:** Creates a Whish payment link for a booking identified by `bookingNumber`. Returns a URL where the user completes payment.
+
+**Request Body:**
+```json
+{
+  "currency": "USD",                 // Optional: LBP | USD | AED (default: config)
+  "success_callback_url": "https://api.example.com/api/whish/callback/success", // Optional
+  "failure_callback_url": "https://api.example.com/api/whish/callback/failure", // Optional
+  "success_redirect_url": "https://app.example.com/payment/success",            // Optional
+  "failure_redirect_url": "https://app.example.com/payment/failure"             // Optional
+}
+```
 
 **Response:**
 ```json
 {
-  "status": "success",
-  "message": "Tour unsaved successfully"
+  "whish_url": "https://whish.money/pay/8nQS2mL"
 }
 ```
 
-#### Check if Tour is Saved
+#### Get Payment Status (Whish)
 
-**Endpoint:** `GET /api/v1/saved-tours/{tour}/check`
+**Endpoint:** `GET /api/v1/tour-bookings/{id}/payment-status`
 
 **Authentication:** Required (JWT)
 
-**Description:** Checks if a tour is saved by the authenticated user.
+**Description:** Polls Whish collect status for this booking (booking id is used as `externalId`). If Whish returns `success`, the booking is updated to `confirmed`. This is primarily a fallback; server-to-server callbacks are the authoritative status updates.
 
-**Parameters:**
-- `tour`: Tour ID or slug
+**Query Parameters:**
+- `currency` (optional): `LBP` | `USD` | `AED` (defaults to config)
 
 **Response:**
 ```json
 {
-  "status": "success",
-  "data": {
-    "is_saved": true
-  }
+  "collect_status": "pending",   // success | failed | pending
+  "booking_status": "pending"    // pending | confirmed | canceled
 }
 ```
 
-### Tour Bookings (Coming Soon)
+#### Configuration
 
-**Note:** Tour booking endpoints will be added in a future API update. These will include:
-
-- Creating tour bookings
-- Managing bookings
-- Processing payments
-- Cancellation policies
-- Retrieving booking history
+- **Environment variables:**
+  - `WHISH_CHANNEL`, `WHISH_SECRET`, `WHISH_ENV` (`testing|live`), `WHISH_WEBSITE_URL`
+  - Optional defaults: `WHISH_DEFAULT_CURRENCY`, callback and redirect URLs
+- **Notes:**
+  - Payment `externalId` is the booking id.
+  - If callback/redirect URLs are not provided in the request, backend defaults from configuration are used.
+  - Use the returned `whish_url` to redirect the user to complete payment.
+  - Server-to-server callbacks (`/api/whish/callback/success` and `/api/whish/callback/failure`) update booking status authoritatively; redirects are for UX only.

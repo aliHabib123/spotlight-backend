@@ -85,6 +85,11 @@ class Tour extends Model
         return $this->hasMany(TourRating::class);
     }
     
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(TourBooking::class);
+    }
+    
     /**
      * Scope a query to only include active tours
      */
