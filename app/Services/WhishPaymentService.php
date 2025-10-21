@@ -174,13 +174,23 @@ class WhishPaymentService
         ?string $failureRedirectUrl = null
     ): string {
         $endpoint = '/payment/whish';
+        // Format externalId and build callback URLs with externalId parameter
+        $formattedExternalId = is_numeric($externalId) ? (int)$externalId : (string)$externalId;
+        
+        $finalSuccessCallback = $successCallbackUrl ?: config('whish.default_success_callback_url');
+        $finalFailureCallback = $failureCallbackUrl ?: config('whish.default_failure_callback_url');
+        
+        // Append externalId to callback URLs
+        $finalSuccessCallback .= (str_contains($finalSuccessCallback, '?') ? '&' : '?') . 'externalId=' . $formattedExternalId;
+        $finalFailureCallback .= (str_contains($finalFailureCallback, '?') ? '&' : '?') . 'externalId=' . $formattedExternalId;
+
         $payload = [
             'amount' => $amount,
             'currency' => $currency ?: config('whish.default_currency', 'USD'),
             'invoice' => $invoice,
-            'externalId' => is_numeric($externalId) ? (int)$externalId : (string)$externalId,
-            'successCallbackUrl' => $successCallbackUrl ?: config('whish.default_success_callback_url'),
-            'failureCallbackUrl' => $failureCallbackUrl ?: config('whish.default_failure_callback_url'),
+            'externalId' => $formattedExternalId,
+            'successCallbackUrl' => $finalSuccessCallback,
+            'failureCallbackUrl' => $finalFailureCallback,
             'successRedirectUrl' => $successRedirectUrl ?: config('whish.default_success_redirect_url'),
             'failureRedirectUrl' => $failureRedirectUrl ?: config('whish.default_failure_redirect_url'),
         ];
