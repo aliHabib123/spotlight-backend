@@ -198,11 +198,15 @@ class TourBookingController extends Controller
         $currency = $request->input('currency');
         $invoice = 'Tour booking #' . $booking->booking_number;
 
+        // Create unique externalId by appending timestamp to booking ID
+        // This ensures each payment attempt has a unique identifier
+        $uniqueExternalId = $booking->id . '-' . time();
+
         $url = $whish->createPaymentLink(
             (float) $booking->total_price,
             $currency,
             $invoice,
-            $booking->id,
+            $uniqueExternalId,
             $request->input('success_callback_url'),
             $request->input('failure_callback_url'),
             $request->input('success_redirect_url'),
@@ -270,11 +274,15 @@ class TourBookingController extends Controller
         $currency = $request->input('currency');
         $invoice = 'Tour booking #' . $booking->booking_number;
 
+        // Create unique externalId by appending timestamp to booking ID
+        // This ensures each payment attempt has a unique identifier
+        $uniqueExternalId = $booking->id . '-' . time();
+
         $url = $whish->createPaymentLink(
             (float) $booking->total_price,
             $currency,
             $invoice,
-            $booking->id,
+            $uniqueExternalId,
             $request->input('success_callback_url'),
             $request->input('failure_callback_url'),
             $request->input('success_redirect_url'),
