@@ -3,9 +3,25 @@
 use Illuminate\Support\Facades\Route;
 use App\Services\FirebaseNotificationService;
 use App\Models\FcmToken;
+use Illuminate\Http\Request;
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+// Simple payment result pages (for user-facing redirects)
+Route::get('/payment/success', function (Request $request) {
+    return view('payment.success', [
+        'booking_number' => $request->query('bookingNumber'),
+        'status' => $request->query('status', 'success'),
+    ]);
+});
+
+Route::get('/payment/failure', function (Request $request) {
+    return view('payment.failure', [
+        'booking_number' => $request->query('bookingNumber'),
+        'status' => $request->query('status', 'failed'),
+    ]);
 });
 
 Route::get('/test-firebase', function () {

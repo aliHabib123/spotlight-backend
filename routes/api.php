@@ -30,6 +30,8 @@ use App\Http\Controllers\Api\EventCategoryController;
 use App\Http\Controllers\Api\EventLocationController;
 use App\Http\Controllers\Api\TourController;
 use App\Http\Controllers\Api\TourLocationController;
+use App\Http\Controllers\Api\TourBookingController;
+use App\Http\Controllers\Api\WhishCallbackController;
 use App\Http\Controllers\FcmTokenController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -48,6 +50,10 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+// Whish callbacks (public, no version prefix) to match config default URLs
+Route::get('/whish/callback/success', [WhishCallbackController::class, 'success']);
+Route::get('/whish/callback/failure', [WhishCallbackController::class, 'failure']);
 
 // JWT Authentication routes for mobile app
 Route::prefix('v1/auth')->group(function () {
@@ -133,6 +139,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/tours', [TourController::class, 'index']);
     Route::get('/tours/{id}', [TourController::class, 'show']);
     Route::get('/tours/{id}/ratings', [TourController::class, 'getRatings']);
+    // Tour Bookings - Public endpoints
+    Route::post('/tours/{id}/book', [TourBookingController::class, 'store']);
+    Route::get('/tour-bookings/status/{bookingNumber}', [TourBookingController::class, 'status']);
+    Route::post('/tour-bookings/{bookingNumber}/payment-link', [TourBookingController::class, 'publicPaymentLink']);
 
     // Tags
     Route::get('/tags', [TagController::class, 'index']);
@@ -215,6 +225,13 @@ Route::middleware([\App\Http\Middleware\JsonApiAuthentication::class . ':api'])-
     // Tour Rating
     Route::post('/tours/{id}/rate', [TourController::class, 'rate']);
     Route::get('/tours/{id}/rating', [TourController::class, 'checkRating']);
+    // Tour Bookings - Authenticated user endpoints
+    Route::prefix('tour-bookings')->group(function () {
+        Route::get('/', [TourBookingController::class, 'index']);
+        Route::get('/{id}', [TourBookingController::class, 'show']);
+        Route::patch('/{id}/cancel', [TourBookingController::class, 'cancel']);
+        Route::get('/{id}/payment-status', [TourBookingController::class, 'paymentStatus']);
+    });
     
     // Tour Management (for Tour Admins)
     Route::post('/tours', [TourController::class, 'store']);
