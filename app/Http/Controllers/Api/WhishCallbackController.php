@@ -31,25 +31,38 @@ class WhishCallbackController extends Controller
      */
     protected function handle(Request $request, WhishPaymentService $whish)
     {
-        // Log incoming callback request
+        // Log incoming callback request with ALL possible data
         Log::info('[WhishCallback] Incoming request', [
             'url' => $request->fullUrl(),
             'method' => $request->method(),
             'query_params' => $request->query(),
+            'post_data' => $request->all(),
+            'raw_body' => $request->getContent(),
             'headers' => [
                 'user-agent' => $request->header('User-Agent'),
                 'x-forwarded-for' => $request->header('X-Forwarded-For'),
                 'remote-addr' => $request->ip(),
+                'content-type' => $request->header('Content-Type'),
+                'all_headers' => $request->headers->all(),
             ],
         ]);
 
+        // Try to get externalId from query params, POST data, or JSON body
         $externalId = $request->query('externalId')
             ?? $request->query('external_id')
-            ?? $request->query('externalid');
+            ?? $request->query('externalid')
+            ?? $request->input('externalId')
+            ?? $request->input('external_id')
+            ?? $request->input('externalid')
+            ?? $request->input('booking_id')
+            ?? $request->input('id');
 
         if (empty($externalId)) {
             Log::warning('[WhishCallback] Missing externalId', [
                 'query_params' => $request->query(),
+                'post_data' => $request->all(),
+                'raw_body' => $request->getContent(),
+                'tried_keys' => ['externalId', 'external_id', 'externalid', 'booking_id', 'id'],
             ]);
             return response()->json(['message' => 'externalId is required'], 422);
         }
