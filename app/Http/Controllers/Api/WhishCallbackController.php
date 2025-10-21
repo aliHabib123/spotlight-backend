@@ -50,12 +50,16 @@ class WhishCallbackController extends Controller
             return response()->json(['message' => 'externalId is required'], 422);
         }
 
+        // Extract booking ID from compound externalId (format: "bookingId-timestamp")
+        $bookingId = (int) explode('-', $externalId)[0];
+
         Log::info('[WhishCallback] Processing callback for booking', [
             'externalId' => $externalId,
+            'bookingId' => $bookingId,
         ]);
 
-        // Find the booking by externalId (which is the booking ID)
-        $booking = TourBooking::find((int) $externalId);
+        // Find the booking by extracted booking ID
+        $booking = TourBooking::find($bookingId);
         if (!$booking) {
             Log::error('[WhishCallback] Booking not found', [
                 'externalId' => $externalId,
@@ -70,15 +74,16 @@ class WhishCallbackController extends Controller
         ]);
 
         try {
-            // Poll Whish for this booking's collect status
+            // Poll Whish for this booking's collect status using the original externalId
             $currency = config('whish.default_currency', 'USD');
             
             Log::info('[WhishCallback] Checking Whish collect status', [
                 'booking_id' => $booking->id,
+                'original_externalId' => $externalId,
                 'currency' => $currency,
             ]);
 
-            $status = $whish->getCollectStatus($currency, $booking->id);
+            $status = $whish->getCollectStatus($currency, $externalId);
             
             Log::info('[WhishCallback] Whish collect status received', [
                 'booking_id' => $booking->id,
