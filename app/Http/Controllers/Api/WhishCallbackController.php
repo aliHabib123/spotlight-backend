@@ -31,49 +31,30 @@ class WhishCallbackController extends Controller
      */
     protected function handle(Request $request, WhishPaymentService $whish)
     {
-        // Log incoming callback request with ALL possible data
+        // Log incoming callback request
         Log::info('[WhishCallback] Incoming request', [
             'url' => $request->fullUrl(),
             'method' => $request->method(),
             'query_params' => $request->query(),
-            'post_data' => $request->all(),
-            'raw_body' => $request->getContent(),
-            'headers' => [
-                'user-agent' => $request->header('User-Agent'),
-                'x-forwarded-for' => $request->header('X-Forwarded-For'),
-                'remote-addr' => $request->ip(),
-                'content-type' => $request->header('Content-Type'),
-                'all_headers' => $request->headers->all(),
-            ],
+            'user_agent' => $request->header('User-Agent'),
+            'ip' => $request->ip(),
         ]);
 
-        // Try to get externalId from query params, POST data, or JSON body
-        $externalId = $request->query('externalId')
-            ?? $request->query('external_id')
-            ?? $request->query('externalid')
-            ?? $request->input('externalId')
-            ?? $request->input('external_id')
-            ?? $request->input('externalid')
-            ?? $request->input('booking_id')
-            ?? $request->input('id');
+        // Extract externalId from query parameters
+        $externalId = $request->query('externalId');
 
         if (empty($externalId)) {
             Log::warning('[WhishCallback] Missing externalId', [
                 'query_params' => $request->query(),
-                'post_data' => $request->all(),
-                'raw_body' => $request->getContent(),
-                'tried_keys' => ['externalId', 'external_id', 'externalid', 'booking_id', 'id'],
             ]);
             return response()->json(['message' => 'externalId is required'], 422);
         }
 
-        $currency = $request->query('currency', config('whish.default_currency', 'USD'));
-
-        Log::info('[WhishCallback] Processing callback', [
+        Log::info('[WhishCallback] Processing callback for booking', [
             'externalId' => $externalId,
-            'currency' => $currency,
         ]);
 
+        // Find the booking by externalId (which is the booking ID)
         $booking = TourBooking::find((int) $externalId);
         if (!$booking) {
             Log::error('[WhishCallback] Booking not found', [
@@ -86,16 +67,17 @@ class WhishCallbackController extends Controller
             'booking_id' => $booking->id,
             'booking_number' => $booking->booking_number,
             'current_status' => $booking->status,
-            'tour_id' => $booking->tour_id,
         ]);
 
         try {
-            // Poll Whish for authoritative collect status
-            Log::info('[WhishCallback] Polling Whish collect status', [
+            // Poll Whish for this booking's collect status
+            $currency = config('whish.default_currency', 'USD');
+            
+            Log::info('[WhishCallback] Checking Whish collect status', [
                 'booking_id' => $booking->id,
                 'currency' => $currency,
             ]);
-            
+
             $status = $whish->getCollectStatus($currency, $booking->id);
             
             Log::info('[WhishCallback] Whish collect status received', [
