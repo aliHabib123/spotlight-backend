@@ -34,7 +34,7 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-    
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
@@ -45,6 +45,13 @@ return [
         'client_id' => env('FACEBOOK_CLIENT_ID'),
         'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
         'redirect' => env('FACEBOOK_REDIRECT_URI'),
+    ],
+
+    'weatherkit' => [
+        'team_id' => env('WEATHERKIT_TEAM_ID'),
+        'service_id' => env('WEATHERKIT_SERVICE_ID'),
+        'key_id' => env('WEATHERKIT_KEY_ID'),
+        'key_path' => env('WEATHERKIT_KEY_PATH', 'storage/app/private/WeatherKit_35CD9B7MLT.p8'),
     ],
 
 ];
