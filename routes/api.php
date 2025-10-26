@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\TourController;
 use App\Http\Controllers\Api\TourLocationController;
 use App\Http\Controllers\Api\TourBookingController;
 use App\Http\Controllers\Api\WhishCallbackController;
+use App\Http\Controllers\Api\WeatherController;
 use App\Http\Controllers\FcmTokenController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -218,6 +219,8 @@ Route::prefix('v1')->group(function () {
     
     // FCM Tokens - Public (for device registration)
     Route::post('/fcm-tokens', [FcmTokenController::class, 'store']);
+
+    Route::get('/weather', [WeatherController::class, 'show']);
 });
 
 // Protected API routes
