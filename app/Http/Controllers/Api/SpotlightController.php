@@ -28,7 +28,7 @@ class SpotlightController extends Controller
     {
         // Generate a cache key based on all request parameters
         $cacheKey = 'spotlights_index_' . md5(json_encode($request->all()));
-        
+
         // Cache for 1 hour (3600 seconds)
         return Cache::remember($cacheKey, 3600, function() use ($request) {
             // Enable query logging
@@ -145,7 +145,7 @@ class SpotlightController extends Controller
         $query->orderBy($sortField, $sortDirection);
 
         $result = $query->paginate($request->input('per_page', 15));
-        
+
         // Add user rating for each spotlight (null if not authenticated or not rated)
         foreach ($result->items() as $spotlight) {
             $userRating = null;
@@ -186,7 +186,7 @@ class SpotlightController extends Controller
      */
     public function featured(Request $request)
     {
-        $cacheKey = 'featured_spotlights_sorted_by_display_order_' . $request->input('per_page', 8);
+        $cacheKey = 'featured_spotlights_sorted_by_display_order_' . $request->input('per_page', 25);
 
         $paginator = Cache::remember($cacheKey, 3600, function() use ($request) {
             return Spotlight::with(['category', 'tags', 'location'])
@@ -195,9 +195,9 @@ class SpotlightController extends Controller
                 ->where('is_published', true)
                 ->orderBy('display_order', 'desc')
                 ->orderBy('created_at', 'desc')
-                ->paginate($request->input('per_page', 8));
+                ->paginate($request->input('per_page', 25));
         });
-        
+
         // Add user rating for each spotlight (null if not authenticated or not rated)
         foreach ($paginator->items() as $spotlight) {
             $userRating = null;
@@ -230,7 +230,7 @@ class SpotlightController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->input('per_page', 8));
         });
-        
+
         // Add user rating for each spotlight (null if not authenticated or not rated)
         foreach ($paginator->items() as $spotlight) {
             $userRating = null;
@@ -261,7 +261,7 @@ class SpotlightController extends Controller
                 ->limit(10)
                 ->get();
         });
-        
+
         // Add user rating for each spotlight (null if not authenticated or not rated)
         foreach ($spotlights as $spotlight) {
             $userRating = null;
@@ -287,7 +287,7 @@ class SpotlightController extends Controller
     {
         // Generate a cache key based on category and request parameters
         $cacheKey = 'spotlights_category_' . $category->id . '_' . md5(json_encode($request->all()));
-        
+
         // Cache for 1 hour (3600 seconds)
         $paginator = Cache::remember($cacheKey, 3600, function() use ($category, $request) {
             $categoryIds = [$category->id];
@@ -304,7 +304,7 @@ class SpotlightController extends Controller
                 ->where('is_published', true)
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->input('per_page', 15));
-            
+
             // Add user rating for each spotlight (null if not authenticated or not rated)
             foreach ($paginator->items() as $spotlight) {
                 $userRating = null;
@@ -446,15 +446,15 @@ class SpotlightController extends Controller
             if (Auth::guest()) {
                 abort(404, 'Spotlight not found');
             }
-            
+
             // For authenticated users, check if they have permission to manage spotlights
             $this->authorize('manage', $spotlight);
         }
-        
+
         // Generate a cache key based on spotlight ID and user authentication status
         $userId = Auth::check() ? Auth::id() : 'guest';
         $cacheKey = 'spotlight_detail_' . $spotlight->id . '_' . $userId;
-        
+
         // Cache for 1 hour (3600 seconds)
         $result = Cache::remember($cacheKey, 3600, function() use ($spotlight) {
             // Load ratings with user information
@@ -466,7 +466,7 @@ class SpotlightController extends Controller
                 'attributeValues.attributeOption',
                 'media'
             ]);
-            
+
             // Check if user is logged in and has rated this spotlight
             $userRating = null;
             if (Auth::check()) {
@@ -474,14 +474,14 @@ class SpotlightController extends Controller
                     ->where('user_id', Auth::id())
                     ->first();
             }
-            
+
             // Store the data we want to return
             return [
                 'data' => $spotlight,
                 'user_rating' => $userRating
             ];
         });
-        
+
         return response()->json($result);
     }
 

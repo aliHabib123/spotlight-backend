@@ -364,9 +364,14 @@ class TourController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
         
+        $userId = $request->user()?->id ?? Auth::guard('api')->id() ?? Auth::id();
+        if (!$userId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        
         // Check if user already rated this tour
         $existingRating = TourRating::where('tour_id', $id)
-                                   ->where('user_id', Auth::id())
+                                   ->where('user_id', $userId)
                                    ->first();
         
         if ($existingRating) {
@@ -377,7 +382,7 @@ class TourController extends Controller
         } else {
             $rating = new TourRating([
                 'tour_id' => $id,
-                'user_id' => Auth::id(),
+                'user_id' => $userId,
                 'rating' => $request->rating,
                 'comment' => $request->comment,
             ]);
@@ -398,8 +403,13 @@ class TourController extends Controller
         // Validate tour exists
         $tour = Tour::findOrFail($id);
         
+        $userId = request()->user()?->id ?? Auth::guard('api')->id() ?? Auth::id();
+        if (!$userId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+        
         $rating = TourRating::where('tour_id', $id)
-                           ->where('user_id', Auth::id())
+                           ->where('user_id', $userId)
                            ->first();
         
         if ($rating) {

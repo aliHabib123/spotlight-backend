@@ -31,6 +31,10 @@ class JsonApiAuthentication
         try {
             // Try to authenticate with the specified guard
             if ($hasToken) {
+                // Ensure the default guard for this request is the provided guard (e.g., 'api')
+                if (!empty($guard)) {
+                    Auth::shouldUse($guard);
+                }
                 // Explicit attempt to authenticate with token
                 $authenticated = Auth::guard($guard)->check();
                 
