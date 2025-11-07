@@ -88,23 +88,13 @@ class LocationResource extends Resource
                     ->sortable(),
                     
                 Tables\Columns\TextColumn::make('city')
-                    ->searchable()
                     ->sortable(),
                     
                 Tables\Columns\TextColumn::make('country')
-                    ->searchable()
                     ->sortable(),
                     
                 Tables\Columns\TextColumn::make('full_address')
                     ->label('Full Address')
-                    ->searchable(query: function (Builder $query, string $search): Builder {
-                        return $query->where('address_line_1', 'like', "%{$search}%")
-                            ->orWhere('address_line_2', 'like', "%{$search}%")
-                            ->orWhere('city', 'like', "%{$search}%")
-                            ->orWhere('state', 'like', "%{$search}%")
-                            ->orWhere('postal_code', 'like', "%{$search}%")
-                            ->orWhere('country', 'like', "%{$search}%");
-                    })
                     ->toggleable(),
                     
                 Tables\Columns\TextColumn::make('spotlights_count')
