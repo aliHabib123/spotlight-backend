@@ -6,7 +6,7 @@ return [
 
     'base_urls' => [
         'live' => 'https://whish.money/itel-service/api/',
-        'testing' => 'https://lb.sandbox.whish.money/itel-service/api/',
+        'testing' => 'https://api.sandbox.whish.money/itel-service/api/',
     ],
 
     'channel' => env('WHISH_CHANNEL', ''),
