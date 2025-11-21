@@ -414,6 +414,9 @@ class SpotlightController extends Controller
                     }
                 }
 
+                // Clear latest spotlights cache
+                Cache::forget('latest_10_spotlights');
+
                 return response()->json([
                     'message' => 'Spotlight created successfully',
                     'data' => $spotlight->load(['category', 'tags', 'location', 'attributeValues', 'media'])
@@ -605,6 +608,9 @@ class SpotlightController extends Controller
 
                 // Delete spotlight
                 $spotlight->delete();
+
+                // Clear latest spotlights cache
+                Cache::forget('latest_10_spotlights');
             });
 
             return response()->json([
@@ -632,6 +638,9 @@ class SpotlightController extends Controller
             'is_published' => true,
         ]);
 
+        // Clear latest spotlights cache
+        Cache::forget('latest_10_spotlights');
+
         return response()->json([
             'message' => 'Spotlight published successfully',
             'data' => $spotlight->fresh()
@@ -651,6 +660,9 @@ class SpotlightController extends Controller
         $spotlight->update([
             'is_published' => false,
         ]);
+
+        // Clear latest spotlights cache
+        Cache::forget('latest_10_spotlights');
 
         return response()->json([
             'message' => 'Spotlight unpublished successfully',
