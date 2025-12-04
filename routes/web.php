@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Services\FirebaseNotificationService;
 use App\Models\FcmToken;
 use Illuminate\Http\Request;
+use Laravel\Octane\Facades\Octane;
 
 Route::get('/', function () {
     return view('welcome');
@@ -13,6 +14,11 @@ Route::get('/octane-test', function () {
     static $counter = 0;
     $counter++;
     return "Counter: {$counter}";
+});
+Route::get('/octane-test1', function () {
+    $table = Octane::table('counter');
+    $table['value'] = ($table['value'] ?? 0) + 1;
+    return 'Counter: '.$table['value'];
 });
 
 // Simple payment result pages (for user-facing redirects)
