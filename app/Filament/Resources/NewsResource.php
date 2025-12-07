@@ -20,11 +20,11 @@ class NewsResource extends Resource
     protected static ?string $model = News::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-newspaper';
-    
+
     protected static ?string $navigationGroup = 'News Management';
-    
+
     protected static ?int $navigationSort = 2;
-    
+
     public static function canAccess(): bool
     {
         // Only admins and super admins can access this resource
@@ -45,20 +45,20 @@ class NewsResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) => 
+                            ->afterStateUpdated(fn (string $operation, $state, Forms\Set $set) =>
                                 $operation === 'create' ? $set('slug', \Illuminate\Support\Str::slug($state)) : null),
-                        
+
                         Forms\Components\TextInput::make('slug')
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true),
-                            
+
                         Forms\Components\Select::make('news_category_id')
                             ->relationship('category', 'name')
                             ->required()
                             ->preload()
                             ->searchable(),
-                            
+
                         Forms\Components\Select::make('user_id')
                             ->relationship('author', 'name')
                             ->required()
@@ -66,33 +66,37 @@ class NewsResource extends Resource
                             ->preload()
                             ->searchable(),
                     ])->columns(2),
-                    
+
                 Forms\Components\Section::make('Content')
                     ->schema([
                         Forms\Components\Textarea::make('summary')
                             ->maxLength(500)
                             ->columnSpanFull(),
-                            
+
                         Forms\Components\RichEditor::make('content')
                             ->required()
                             ->columnSpanFull(),
-                            
+
                         Forms\Components\FileUpload::make('featured_image')
                             ->image()
                             ->directory('news')
                             ->columnSpanFull(),
                     ]),
-                    
+
                 Forms\Components\Section::make('Publication')
                     ->schema([
                         Forms\Components\Toggle::make('is_published')
                             ->label('Published')
                             ->default(false),
-                            
+                        Forms\Components\Toggle::make('send_notification')
+                            ->label('Send Push Notification')
+                            ->helperText('Send a push notification to all app users when this news item is published')
+                            ->default(true),
+
                         Forms\Components\Toggle::make('show_date')
                             ->label('Show Date')
                             ->default(true),
-                            
+
                         Forms\Components\DateTimePicker::make('published_at')
                             ->label('Publish Date')
                             ->default(now())
@@ -109,31 +113,31 @@ class NewsResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->limit(50),
-                    
+
                 Tables\Columns\TextColumn::make('category.name')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('author.name')
                     ->searchable()
                     ->sortable(),
-                    
+
                 Tables\Columns\ImageColumn::make('featured_image')
                     ->circular(),
-                    
+
                 Tables\Columns\IconColumn::make('is_published')
                     ->boolean()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('published_at')
                     ->dateTime()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                    
+
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
@@ -145,13 +149,13 @@ class NewsResource extends Resource
                     ->label('Category')
                     ->preload()
                     ->searchable(),
-                    
+
                 Tables\Filters\SelectFilter::make('user_id')
                     ->relationship('author', 'name')
                     ->label('Author')
                     ->preload()
                     ->searchable(),
-                    
+
                 Tables\Filters\TernaryFilter::make('is_published')
                     ->label('Published Status')
                     ->placeholder('All News')

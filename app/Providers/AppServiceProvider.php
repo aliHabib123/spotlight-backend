@@ -11,9 +11,13 @@ use Illuminate\Contracts\Foundation\Application;
 use App\Models\Spotlight;
 use App\Models\Tour;
 use App\Models\TourLocation;
+use App\Models\News;
+use App\Models\Event;
 use App\Observers\SpotlightObserver;
 use App\Observers\TourLocationObserver;
 use App\Observers\TourObserver;
+use App\Observers\NewsObserver;
+use App\Observers\EventObserver;
 use App\Services\FirebaseNotificationService;
 
 class AppServiceProvider extends ServiceProvider
@@ -50,5 +54,7 @@ class AppServiceProvider extends ServiceProvider
         Spotlight::observe(SpotlightObserver::class);
         TourLocation::observe(TourLocationObserver::class);
         Tour::observe(TourObserver::class);
+        News::observe(NewsObserver::class);
+        Event::observe(EventObserver::class);
     }
 }

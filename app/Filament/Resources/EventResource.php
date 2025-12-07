@@ -20,11 +20,11 @@ class EventResource extends Resource
     protected static ?string $model = Event::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
-    
+
     protected static ?string $navigationGroup = 'Events';
-    
+
     protected static ?int $navigationSort = 2;
-    
+
     public static function canAccess(): bool
     {
         // Only admins and super admins can access this resource
@@ -63,7 +63,7 @@ class EventResource extends Resource
                             ->columnSpanFull()
                             ->maxLength(5000),
                     ])->columns(2),
-                    
+
                 Forms\Components\Section::make('Location & Contact')
                     ->schema([
                         Forms\Components\Select::make('event_location_id')
@@ -90,7 +90,7 @@ class EventResource extends Resource
                             ->directory('events')
                             ->columnSpanFull(),
                     ])->columns(2),
-                    
+
                 Forms\Components\Section::make('Event Schedules')
                     ->schema([
                         Forms\Components\Repeater::make('schedules')
@@ -109,13 +109,13 @@ class EventResource extends Resource
                             ->columns(3)
                             ->defaultItems(1)
                             ->reorderable()
-                            ->itemLabel(fn (array $state): ?string => 
-                                $state['date'] ? date('M d, Y', strtotime($state['date'])) . ' - ' . 
+                            ->itemLabel(fn (array $state): ?string =>
+                                $state['date'] ? date('M d, Y', strtotime($state['date'])) . ' - ' .
                                 ($state['start_time'] ?? '') . ' to ' . ($state['end_time'] ?? '') : null
                             )
                             ->columnSpanFull(),
                     ]),
-                    
+
                 Forms\Components\Section::make('Status & Features')
                     ->schema([
                         Forms\Components\Toggle::make('is_featured')
@@ -124,6 +124,10 @@ class EventResource extends Resource
                         Forms\Components\Toggle::make('is_published')
                             ->default(true)
                             ->helperText('Only published events are visible to users'),
+                        Forms\Components\Toggle::make('send_notification')
+                            ->label('Send Push Notification')
+                            ->helperText('Send a push notification to all app users when this event is published')
+                            ->default(true),
                     ])->columns(2),
             ]);
     }

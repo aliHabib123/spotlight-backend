@@ -28,9 +28,9 @@ class TourResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-globe-alt';
 
     protected static ?string $navigationGroup = 'Tours Management';
-    
+
     protected static ?int $navigationSort = 1;
-    
+
     public static function canAccess(): bool
     {
         // Tour resources should be visible to admins, super admins and tour admins
@@ -40,7 +40,7 @@ class TourResource extends Resource
         }
         return false;
     }
-    
+
     // Keep for backward compatibility
     public static function shouldRegisterNavigation(): bool
     {
@@ -66,7 +66,7 @@ class TourResource extends Resource
                                         if ($operation !== 'create') {
                                             return;
                                         }
-                                        
+
                                         $set('slug', \Illuminate\Support\Str::slug($state));
                                     }),
                                 Forms\Components\TextInput::make('slug')
@@ -82,7 +82,7 @@ class TourResource extends Resource
                                     ->required()
                                     ->columnSpanFull(),
                             ])->columns(2),
-                        
+
                         Forms\Components\Tabs\Tab::make('Pricing')
                             ->schema([
                                 Forms\Components\TextInput::make('price')
@@ -107,7 +107,7 @@ class TourResource extends Resource
                                     ->step(1)
                                     ->helperText('Maximum number of people allowed on the tour'),
                             ])->columns(2),
-                        
+
                         Forms\Components\Tabs\Tab::make('Availability')
                             ->schema([
                                 Forms\Components\Section::make('Select Available Days')
@@ -175,12 +175,12 @@ class TourResource extends Resource
                                     ])
                                     ->columnSpanFull(),
                             ]),
-                            
+
                         // We're not using the inline image tab - use relation manager instead
                         // Forms\Components\Tabs\Tab::make('Images')
                         //     ->schema([
                         //     ]),
-                            
+
                         // For admins - full management tab
                         Forms\Components\Tabs\Tab::make('Management')
                             ->schema([
@@ -194,6 +194,12 @@ class TourResource extends Resource
                                     ->label('Featured')
                                     ->helperText('Feature this tour to highlight it in the app')
                                     ->default(false)
+                                    // Only visible to admins and super admins
+                                    ->visible(fn () => Auth::check() && (Auth::user()->hasRole('super admin') || Auth::user()->hasRole('admin'))),
+                                Forms\Components\Toggle::make('send_notification')
+                                    ->label('Send Push Notification')
+                                    ->helperText('Send a push notification to all app users when this tour is approved')
+                                    ->default(true)
                                     // Only visible to admins and super admins
                                     ->visible(fn () => Auth::check() && (Auth::user()->hasRole('super admin') || Auth::user()->hasRole('admin'))),
                                 Forms\Components\Select::make('user_id')
@@ -357,7 +363,7 @@ class TourResource extends Resource
 
         return $query;
     }
-    
+
     public static function getRelations(): array
     {
         return [
