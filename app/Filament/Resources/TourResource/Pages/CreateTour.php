@@ -12,17 +12,27 @@ use Illuminate\Validation\ValidationException;
 class CreateTour extends CreateRecord
 {
     protected static string $resource = TourResource::class;
-    
+
     /**
      * @param array $data
      * @return Model
      */
     protected function handleRecordCreation(array $data): Model
-    {   
+    {
+        $sendNotification = array_key_exists('send_notification', $data)
+            ? (bool) $data['send_notification']
+            : true;
+
+        session(['tour_send_notification' => $sendNotification]);
+
+        if (isset($data['send_notification'])) {
+            unset($data['send_notification']);
+        }
+
         // Get available days and remove from data array
         $availableDaysData = $data['available_days'] ?? [];
         unset($data['available_days']);
-        
+
         // Validate at least one day is selected
         $hasSelectedDay = false;
         foreach ($availableDaysData as $value) {
@@ -31,16 +41,16 @@ class CreateTour extends CreateRecord
                 break;
             }
         }
-        
+
         if (!$hasSelectedDay) {
             throw ValidationException::withMessages([
                 'available_days' => 'Please select at least one available day.',
             ]);
         }
-        
+
         // Create the tour record
         $tour = static::getModel()::create($data);
-        
+
         // Create day availabilities
         $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
         foreach ($days as $day) {
@@ -51,7 +61,7 @@ class CreateTour extends CreateRecord
                 ]);
             }
         }
-        
+
         return $tour;
     }
 }
