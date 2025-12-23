@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 class Spotlight extends Model
 {
     use HasFactory;
-    
+
     /**
      * The attributes that are mass assignable.
      *
@@ -39,6 +39,7 @@ class Spotlight extends Model
         'thumbnail_1080x1080',
         'thumbnail_small',
         'is_featured',
+        'is_category_featured',
         'is_trending',
         'is_published',
         'published_at',
@@ -46,7 +47,7 @@ class Spotlight extends Model
         'review_count',
         'display_order',
     ];
-    
+
     /**
      * The attributes that should be cast.
      *
@@ -57,12 +58,13 @@ class Spotlight extends Model
         'social_links' => 'array',
         'opening_hours' => 'array',
         'is_featured' => 'boolean',
+        'is_category_featured' => 'boolean',
         'is_published' => 'boolean',
         'published_at' => 'datetime',
         'average_rating' => 'integer',
         'review_count' => 'integer',
     ];
-    
+
     /**
      * Get the category that owns the spotlight.
      */
@@ -70,7 +72,7 @@ class Spotlight extends Model
     {
         return $this->belongsTo(SpotlightCategory::class, 'category_id');
     }
-    
+
     /**
      * Get the location that owns the spotlight.
      */
@@ -78,7 +80,7 @@ class Spotlight extends Model
     {
         return $this->belongsTo(Location::class, 'location_id');
     }
-    
+
     /**
      * Get the user that created the spotlight.
      */
@@ -86,7 +88,7 @@ class Spotlight extends Model
     {
         return $this->belongsTo(User::class);
     }
-    
+
     /**
      * Get all tags for this spotlight.
      */
@@ -94,7 +96,7 @@ class Spotlight extends Model
     {
         return $this->belongsToMany(Tag::class);
     }
-    
+
     /**
      * Get all attribute values for this spotlight.
      */
@@ -102,7 +104,7 @@ class Spotlight extends Model
     {
         return $this->hasMany(SpotlightAttributeValue::class);
     }
-    
+
     /**
      * Get all media for this spotlight.
      */
@@ -110,16 +112,16 @@ class Spotlight extends Model
     {
         return $this->morphMany(Media::class, 'mediable');
     }
-    
+
     /**
      * Get attribute values organized by attribute definition.
-     * 
+     *
      * @return array
      */
     public function getAttributesByDefinition(): array
     {
         $attributes = [];
-        
+
         foreach ($this->attributeValues as $value) {
             $definition = $value->attributeDefinition;
             if (!isset($attributes[$definition->id])) {
@@ -128,17 +130,17 @@ class Spotlight extends Model
                     'values' => [],
                 ];
             }
-            
+
             if ($value->attribute_option_id) {
                 $attributes[$definition->id]['values'][] = $value->attributeOption;
             } else {
                 $attributes[$definition->id]['values'][] = $value->value;
             }
         }
-        
+
         return $attributes;
     }
-    
+
     /**
      * Scope a query to only include published spotlights.
      */
@@ -146,7 +148,7 @@ class Spotlight extends Model
     {
         return $query->where('is_published', true);
     }
-    
+
     /**
      * Scope a query to only include featured spotlights.
      */
@@ -154,7 +156,12 @@ class Spotlight extends Model
     {
         return $query->where('is_featured', true);
     }
-    
+
+    public function scopeCategoryFeatured(Builder $query): Builder
+    {
+        return $query->where('is_category_featured', true);
+    }
+
     /**
      * Scope a query to filter by category.
      */
@@ -162,7 +169,7 @@ class Spotlight extends Model
     {
         return $query->where('category_id', $categoryId);
     }
-    
+
     /**
      * Scope a query to filter by tag.
      */
@@ -172,7 +179,7 @@ class Spotlight extends Model
             $q->where('tags.id', $tagId);
         });
     }
-    
+
     /**
      * Scope a query to filter by attribute value.
      */
@@ -188,7 +195,7 @@ class Spotlight extends Model
               });
         });
     }
-    
+
     /**
      * Get the users who have saved this spotlight.
      */
@@ -197,7 +204,7 @@ class Spotlight extends Model
         return $this->belongsToMany(User::class, 'saved_spotlights', 'spotlight_id', 'user_id')
                     ->withTimestamps();
     }
-    
+
     /**
      * Get the saved spotlight records.
      */
@@ -205,7 +212,7 @@ class Spotlight extends Model
     {
         return $this->hasMany(SavedSpotlight::class);
     }
-    
+
     /**
      * Get all ratings for this spotlight.
      */
@@ -213,7 +220,7 @@ class Spotlight extends Model
     {
         return $this->hasMany(SpotlightRating::class);
     }
-    
+
     /**
      * Calculate and update the average rating.
      */
@@ -221,13 +228,13 @@ class Spotlight extends Model
     {
         $avgRating = $this->ratings()->avg('rating') ?? 0;
         $count = $this->ratings()->count();
-        
+
         $this->update([
             'average_rating' => round($avgRating),
             'review_count' => $count
         ]);
     }
-    
+
     /**
      * Get the average rating attribute.
      *
@@ -238,7 +245,7 @@ class Spotlight extends Model
     {
         return $value ?? 0;
     }
-    
+
     /**
      * Get the phone number attribute.
      *

@@ -65,6 +65,10 @@ class SpotlightController extends Controller
             $query->where('is_featured', filter_var($request->is_featured, FILTER_VALIDATE_BOOLEAN));
         }
 
+        if ($request->has('is_category_featured')) {
+            $query->where('is_category_featured', filter_var($request->is_category_featured, FILTER_VALIDATE_BOOLEAN));
+        }
+
         // Search
         if ($request->has('search')) {
             $search = $request->search;
@@ -298,10 +302,20 @@ class SpotlightController extends Controller
                 $categoryIds = array_merge($categoryIds, $children->pluck('id')->toArray());
             }
 
-            $paginator = Spotlight::with(['category', 'tags', 'location'])
+            $query = Spotlight::with(['category', 'tags', 'location'])
                 ->whereIn('category_id', $categoryIds)
                 // Filter by is_published
-                ->where('is_published', true)
+                ->where('is_published', true);
+
+            if ($request->has('is_featured')) {
+                $query->where('is_featured', filter_var($request->is_featured, FILTER_VALIDATE_BOOLEAN));
+            }
+
+            if ($request->has('is_category_featured')) {
+                $query->where('is_category_featured', filter_var($request->is_category_featured, FILTER_VALIDATE_BOOLEAN));
+            }
+
+            $paginator = $query
                 ->orderBy('created_at', 'desc')
                 ->paginate($request->input('per_page', 15));
 
