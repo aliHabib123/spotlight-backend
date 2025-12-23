@@ -330,14 +330,14 @@ class SpotlightResource extends Resource
 
                                         Forms\Components\Select::make('location_id')
                                             ->relationship('location', 'name')
-                                            ->required(fn (Forms\Get $get): bool => 
+                                            ->required(fn (Forms\Get $get): bool =>
                                                 // Only required if the category's show_location_filter is true
-                                                $get('category_id') && 
+                                                $get('category_id') &&
                                                 SpotlightCategory::find($get('category_id'))?->show_location_filter ?? true
                                             )
-                                            ->visible(fn (Forms\Get $get): bool => 
+                                            ->visible(fn (Forms\Get $get): bool =>
                                                 // Only visible if the category's show_location_filter is true
-                                                !$get('category_id') || 
+                                                !$get('category_id') ||
                                                 SpotlightCategory::find($get('category_id'))?->show_location_filter ?? true
                                             )
                                             ->searchable()
@@ -363,6 +363,11 @@ class SpotlightResource extends Resource
                                         Forms\Components\Toggle::make('is_featured')
                                             ->label('Featured')
                                             ->helperText('Featured spotlights appear in featured sections')
+                                            ->default(false),
+
+                                        Forms\Components\Toggle::make('is_category_featured')
+                                            ->label('Category Featured')
+                                            ->helperText('Featured spotlights within their own category sections')
                                             ->default(false),
 
                                         Forms\Components\TextInput::make('display_order')
@@ -624,11 +629,16 @@ class SpotlightResource extends Resource
                     ->boolean()
                     ->sortable(),
 
+                Tables\Columns\IconColumn::make('is_category_featured')
+                    ->label('Category Featured')
+                    ->boolean()
+                    ->sortable(),
+
                 Tables\Columns\IconColumn::make('is_trending')
                     ->label('Trending')
                     ->boolean()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('display_order')
                     ->label('Display Order')
                     ->sortable()
@@ -676,6 +686,13 @@ class SpotlightResource extends Resource
                     ->placeholder('All Spotlights')
                     ->trueLabel('Featured Only')
                     ->falseLabel('Non-Featured Only')
+                    ->native(false),
+
+                Tables\Filters\TernaryFilter::make('is_category_featured')
+                    ->label('Category Featured')
+                    ->placeholder('All Spotlights')
+                    ->trueLabel('Category Featured Only')
+                    ->falseLabel('Not Category Featured')
                     ->native(false),
 
                 Tables\Filters\TernaryFilter::make('is_trending')
