@@ -130,18 +130,23 @@ class NewsController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $news = News::with(['category', 'author'])
-            ->where('id', $id)
-            ->orWhere('slug', $id)
-            ->first();
-            
+        // Use id or slug lookup on separate indexed columns instead of OR (avoids index merge)
+        $query = News::with([
+            'category:id,name,slug',
+            'author:id,name',
+        ]);
+
+        $news = is_numeric($id)
+            ? $query->find((int) $id)
+            : $query->where('slug', $id)->first();
+
         if (!$news) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'News article not found'
             ], 404);
         }
-        
+
         // If news is not published, check if user has permission to view it
         if (!$news->is_published && auth('api')->check()) {
             $user = auth('api')->user();
@@ -157,7 +162,7 @@ class NewsController extends Controller
                 'message' => 'News article not found'
             ], 404);
         }
-        
+
         // Get related news from the same category
         $relatedNews = News::where('news_category_id', $news->news_category_id)
             ->where('id', '!=', $news->id)
@@ -165,14 +170,19 @@ class NewsController extends Controller
             ->orderBy('published_at', 'desc')
             ->limit(3)
             ->get(['id', 'title', 'slug', 'summary', 'featured_image', 'published_at']);
-            
-        return response()->json([
+
+        $response = response()->json([
             'status' => 'success',
             'data' => [
                 'news' => $news,
                 'related_news' => $relatedNews
             ]
         ]);
+
+        // Articles change infrequently — allow clients/CDN to cache for 5 minutes
+        $response->headers->set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
+
+        return $response;
     }
 
     /**
