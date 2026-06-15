@@ -261,6 +261,7 @@ class SpotlightController extends Controller
         $spotlights = Cache::remember($cacheKey, 3600, function() {
             return Spotlight::with(['category', 'tags', 'location'])
                 ->where('is_published', true)
+                ->where('hide_from_latest', false)
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
                 ->get();
