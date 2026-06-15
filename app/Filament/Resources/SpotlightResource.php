@@ -387,6 +387,11 @@ class SpotlightResource extends Resource
                                             ->helperText('Only published spotlights are visible to the public')
                                             ->default(true),
 
+                                        Forms\Components\Toggle::make('hide_from_latest')
+                                            ->label('Hide from Latest')
+                                            ->helperText('Exclude this spotlight from the Latest section')
+                                            ->default(false),
+
                                         Forms\Components\Toggle::make('send_notification')
                                             ->label('Send Push Notification')
                                             ->helperText('Send a push notification to all app users when this spotlight is created')
@@ -639,6 +644,12 @@ class SpotlightResource extends Resource
                     ->boolean()
                     ->sortable(),
 
+                Tables\Columns\IconColumn::make('hide_from_latest')
+                    ->label('Hidden from Latest')
+                    ->boolean()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('display_order')
                     ->label('Display Order')
                     ->sortable()
@@ -702,6 +713,12 @@ class SpotlightResource extends Resource
                     ->falseLabel('Non-Trending Only')
                     ->native(false),
 
+                Tables\Filters\TernaryFilter::make('hide_from_latest')
+                    ->label('Hidden from Latest')
+                    ->placeholder('All Spotlights')
+                    ->trueLabel('Hidden Only')
+                    ->falseLabel('Visible in Latest')
+                    ->native(false),
 
                 Tables\Filters\SelectFilter::make('tags')
                     ->relationship('tags', 'name')
