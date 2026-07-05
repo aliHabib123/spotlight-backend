@@ -328,8 +328,10 @@ class SpotlightResource extends Resource
                                             ->columns(2)
                                             ->visible(fn (Forms\Get $get) => !empty($get('category_id'))),
 
-                                        Forms\Components\Select::make('location_id')
-                                            ->relationship('location', 'name')
+                                        Forms\Components\Select::make('locations')
+                                            ->label('Locations')
+                                            ->relationship('locations', 'name')
+                                            ->multiple()
                                             ->required(fn (Forms\Get $get): bool =>
                                                 // Only required if the category's show_location_filter is true
                                                 $get('category_id') &&
@@ -342,7 +344,7 @@ class SpotlightResource extends Resource
                                             )
                                             ->searchable()
                                             ->preload()
-                                            ->helperText('Select from existing locations. New locations must be created in the Locations section.'),
+                                            ->helperText('Select one or more existing locations. The first selected location is kept as the primary location. New locations must be created in the Locations section.'),
 
                                         // Owner/creator field removed as requested
 
@@ -615,9 +617,10 @@ class SpotlightResource extends Resource
                     ->label('Category')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('location.name')
-                    ->label('Location')
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('locations.name')
+                    ->label('Locations')
+                    ->badge()
+                    ->separator(','),
 
                 Tables\Columns\TextColumn::make('phone_number')
                     ->label('Phone')
