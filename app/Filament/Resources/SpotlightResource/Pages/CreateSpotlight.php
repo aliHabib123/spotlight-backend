@@ -57,7 +57,24 @@ class CreateSpotlight extends CreateRecord
     
     protected function afterCreate(): void
     {
+        $this->syncPrimaryLocation();
         $this->saveAttributeValues();
+    }
+
+    /**
+     * Keep the legacy single location_id column pointing at the first selected
+     * location so older app versions still receive a `location` object.
+     */
+    protected function syncPrimaryLocation(): void
+    {
+        $formData = $this->form->getState();
+        $locationIds = $formData['locations'] ?? [];
+        $primary = is_array($locationIds) && ! empty($locationIds) ? (int) $locationIds[0] : null;
+
+        if ($this->record->location_id !== $primary) {
+            $this->record->location_id = $primary;
+            $this->record->saveQuietly();
+        }
     }
     
     protected function saveAttributeValues(): void

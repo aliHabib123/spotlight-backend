@@ -77,11 +77,23 @@ class Spotlight extends Model
     }
 
     /**
-     * Get the location that owns the spotlight.
+     * Get the primary location that owns the spotlight.
+     *
+     * Kept for backward compatibility with older app versions that expect a
+     * single `location` object. New clients should use `locations` instead.
      */
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class, 'location_id');
+    }
+
+    /**
+     * Get all locations associated with this spotlight.
+     */
+    public function locations(): BelongsToMany
+    {
+        return $this->belongsToMany(Location::class, 'location_spotlight')
+                    ->withTimestamps();
     }
 
     /**

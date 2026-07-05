@@ -35,7 +35,7 @@ class SpotlightController extends Controller
             DB::enableQueryLog();
 
         $query = Spotlight::query()
-            ->with(['category', 'tags', 'location']);
+            ->with(['category', 'tags', 'location', 'locations']);
 
         // Filter by is_published
         $query->where('is_published', true);
@@ -52,7 +52,12 @@ class SpotlightController extends Controller
         }
 
         if ($request->has('location_id')) {
-            $query->where('location_id', $request->location_id);
+            // Match against the many-to-many locations pivot. The pivot is
+            // backfilled from the legacy single location_id, so this also covers
+            // spotlights that only have a primary location set.
+            $query->whereHas('locations', function($q) use ($request) {
+                $q->where('locations.id', $request->location_id);
+            });
         }
 
         // Filter by is_trending
@@ -193,7 +198,7 @@ class SpotlightController extends Controller
         $cacheKey = 'featured_spotlights_sorted_by_display_order_' . $request->input('per_page', 25);
 
         $paginator = Cache::remember($cacheKey, 3600, function() use ($request) {
-            return Spotlight::with(['category', 'tags', 'location'])
+            return Spotlight::with(['category', 'tags', 'location', 'locations'])
                 ->where('is_featured', true)
                 // Filter by is_published
                 ->where('is_published', true)
@@ -227,7 +232,7 @@ class SpotlightController extends Controller
         $cacheKey = 'trending_spotlights_' . $request->input('per_page', 8);
 
         $paginator = Cache::remember($cacheKey, 3600, function() use ($request) {
-            return Spotlight::with(['category', 'tags', 'location'])
+            return Spotlight::with(['category', 'tags', 'location', 'locations'])
                 ->where('is_trending', true)
                 // Filter by is_published
                 ->where('is_published', true)
@@ -259,7 +264,7 @@ class SpotlightController extends Controller
         $cacheKey = 'latest_10_spotlights';
 
         $spotlights = Cache::remember($cacheKey, 3600, function() {
-            return Spotlight::with(['category', 'tags', 'location'])
+            return Spotlight::with(['category', 'tags', 'location', 'locations'])
                 ->where('is_published', true)
                 ->where('hide_from_latest', false)
                 ->orderBy('created_at', 'desc')
@@ -303,7 +308,7 @@ class SpotlightController extends Controller
                 $categoryIds = array_merge($categoryIds, $children->pluck('id')->toArray());
             }
 
-            $query = Spotlight::with(['category', 'tags', 'location'])
+            $query = Spotlight::with(['category', 'tags', 'location', 'locations'])
                 ->whereIn('category_id', $categoryIds)
                 // Filter by is_published
                 ->where('is_published', true);
@@ -352,6 +357,8 @@ class SpotlightController extends Controller
             'description' => 'required|string',
             'category_id' => 'required|exists:spotlight_categories,id',
             'location_id' => 'nullable|exists:locations,id',
+            'location_ids' => 'nullable|array',
+            'location_ids.*' => 'exists:locations,id',
             'is_active' => 'nullable|boolean',
             'rating' => 'nullable|numeric|min:0|max:5',
             'contact_email' => 'nullable|email',
@@ -411,6 +418,10 @@ class SpotlightController extends Controller
                     $spotlight->tags()->sync($validated['tags']);
                 }
 
+                // Sync locations (many-to-many). Accepts a `location_ids` array,
+                // and falls back to the single `location_id` for older clients.
+                $this->syncLocations($spotlight, $validated);
+
                 // Process custom attributes
                 if (isset($validated['attributes']) && is_array($validated['attributes'])) {
                     $this->processAttributes($spotlight, $validated['attributes']);
@@ -434,7 +445,7 @@ class SpotlightController extends Controller
 
                 return response()->json([
                     'message' => 'Spotlight created successfully',
-                    'data' => $spotlight->load(['category', 'tags', 'location', 'attributeValues', 'media'])
+                    'data' => $spotlight->load(['category', 'tags', 'location', 'locations', 'attributeValues', 'media'])
                 ], 201);
             });
         } catch (ValidationException $e) {
@@ -480,6 +491,7 @@ class SpotlightController extends Controller
                 'category',
                 'tags',
                 'location',
+                'locations',
                 'attributeValues.attributeDefinition',
                 'attributeValues.attributeOption',
                 'media'
@@ -519,6 +531,8 @@ class SpotlightController extends Controller
             'description' => 'sometimes|string',
             'category_id' => 'sometimes|exists:spotlight_categories,id',
             'location_id' => 'nullable|exists:locations,id',
+            'location_ids' => 'nullable|array',
+            'location_ids.*' => 'exists:locations,id',
             'is_active' => 'sometimes|boolean',
             'rating' => 'nullable|numeric|min:0|max:5',
             'contact_email' => 'nullable|email',
@@ -583,6 +597,11 @@ class SpotlightController extends Controller
                     $spotlight->tags()->sync($validated['tags']);
                 }
 
+                // Sync locations if location data was provided
+                if (array_key_exists('location_ids', $validated) || array_key_exists('location_id', $validated)) {
+                    $this->syncLocations($spotlight, $validated);
+                }
+
                 // Process custom attributes if provided
                 if (isset($validated['attributes']) && is_array($validated['attributes'])) {
                     $this->processAttributes($spotlight, $validated['attributes']);
@@ -590,7 +609,7 @@ class SpotlightController extends Controller
 
                 return response()->json([
                     'message' => 'Spotlight updated successfully',
-                    'data' => $spotlight->fresh(['category', 'tags', 'location', 'attributeValues', 'media'])
+                    'data' => $spotlight->fresh(['category', 'tags', 'location', 'locations', 'attributeValues', 'media'])
                 ]);
             });
         } catch (ValidationException $e) {
@@ -729,6 +748,39 @@ class SpotlightController extends Controller
             'message' => 'Spotlight removed from featured',
             'data' => $spotlight->fresh()
         ]);
+    }
+
+    /**
+     * Sync the many-to-many locations for a spotlight and keep the legacy
+     * single `location_id` column pointing at the first location for backward
+     * compatibility with older app versions.
+     *
+     * Accepts either a `location_ids` array (new clients) or a single
+     * `location_id` (older clients / Filament).
+     *
+     * @param  \App\Models\Spotlight  $spotlight
+     * @param  array  $data
+     * @return void
+     */
+    protected function syncLocations(Spotlight $spotlight, array $data): void
+    {
+        // Prefer the explicit array; otherwise fall back to the single id.
+        if (array_key_exists('location_ids', $data) && is_array($data['location_ids'])) {
+            $locationIds = $data['location_ids'];
+        } elseif (! empty($data['location_id'])) {
+            $locationIds = [$data['location_id']];
+        } else {
+            $locationIds = [];
+        }
+
+        // Normalise to unique integers, preserving order.
+        $locationIds = array_values(array_unique(array_map('intval', $locationIds)));
+
+        $spotlight->locations()->sync($locationIds);
+
+        // Keep the primary location_id column in sync (first location, or null).
+        $spotlight->location_id = $locationIds[0] ?? null;
+        $spotlight->save();
     }
 
     /**
